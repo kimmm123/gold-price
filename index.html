@@ -385,17 +385,34 @@
 // ============================================================
 // 配置
 // ============================================================
+// SVG logo — data URI，清晰无锯齿
+const LOGOS = {
+  icbc: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#CC0000"/><rect x="20" y="30" width="60" height="8" rx="4" fill="white"/><rect x="20" y="62" width="60" height="8" rx="4" fill="white"/><rect x="46" y="30" width="8" height="40" rx="4" fill="white"/></svg>`,
+  ccb:  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#005BAC"/><polygon points="50,15 85,35 85,65 50,85 15,65 15,35" fill="none" stroke="white" stroke-width="7"/><text x="50" y="58" text-anchor="middle" fill="white" font-family="serif" font-size="28" font-weight="bold">建</text></svg>`,
+  boc:  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#CC0000"/><circle cx="50" cy="50" r="30" fill="none" stroke="white" stroke-width="7"/><line x1="20" y1="50" x2="80" y2="50" stroke="white" stroke-width="7"/></svg>`,
+  abc:  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#007A33"/><path d="M50 18 C30 35 18 52 22 68 C28 85 72 85 78 68 C82 52 70 35 50 18Z" fill="white" opacity="0.9"/><path d="M50 30 C38 43 32 55 35 65 C40 78 60 78 65 65 C68 55 62 43 50 30Z" fill="#007A33"/></svg>`,
+  bocom:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#003087"/><path d="M15 60 Q30 35 50 50 Q70 65 85 40" fill="none" stroke="white" stroke-width="8" stroke-linecap="round"/><path d="M15 72 Q30 47 50 62 Q70 77 85 52" fill="none" stroke="white" stroke-width="6" stroke-linecap="round" opacity="0.6"/></svg>`,
+  cmb:  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#CC0000"/><path d="M50 20 L62 42 L86 46 L68 63 L72 87 L50 75 L28 87 L32 63 L14 46 L38 42Z" fill="white"/></svg>`,
+  psbc: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#007A33"/><circle cx="50" cy="48" r="22" fill="none" stroke="white" stroke-width="7"/><path d="M50 26 L50 14 M50 70 L50 82 M72 48 L84 48 M28 48 L16 48" stroke="white" stroke-width="7" stroke-linecap="round"/><circle cx="50" cy="48" r="8" fill="white"/></svg>`,
+  citic:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#0066CC"/><path d="M65 25 A30 30 0 1 0 65 75" fill="none" stroke="white" stroke-width="9" stroke-linecap="round"/><line x1="62" y1="50" x2="85" y2="50" stroke="white" stroke-width="9" stroke-linecap="round"/></svg>`,
+  spdb: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#E60012"/><path d="M25 70 Q40 30 55 50 Q70 70 85 30" fill="none" stroke="white" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><circle cx="25" cy="70" r="6" fill="white"/></svg>`,
+  ceb:  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#E05A00"/><circle cx="50" cy="50" r="16" fill="white"/><line x1="50" y1="14" x2="50" y2="26" stroke="white" stroke-width="7" stroke-linecap="round"/><line x1="50" y1="74" x2="50" y2="86" stroke="white" stroke-width="7" stroke-linecap="round"/><line x1="14" y1="50" x2="26" y2="50" stroke="white" stroke-width="7" stroke-linecap="round"/><line x1="74" y1="50" x2="86" y2="50" stroke="white" stroke-width="7" stroke-linecap="round"/><line x1="26" y1="26" x2="34" y2="34" stroke="white" stroke-width="7" stroke-linecap="round"/><line x1="66" y1="66" x2="74" y2="74" stroke="white" stroke-width="7" stroke-linecap="round"/><line x1="74" y1="26" x2="66" y2="34" stroke="white" stroke-width="7" stroke-linecap="round"/><line x1="34" y1="66" x2="26" y2="74" stroke="white" stroke-width="7" stroke-linecap="round"/></svg>`,
+};
+function svgDataUri(id) {
+  return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(LOGOS[id] || '')));
+}
+
 const BANKS = [
-  {id:'icbc',  name:'中国工商银行', short:'工行', bg:'#CC0000', def:22, logo:'https://www.icbc.com.cn/favicon.ico'},
-  {id:'ccb',   name:'中国建设银行', short:'建行', bg:'#005BAC', def:22, logo:'https://www.ccb.com/favicon.ico'},
-  {id:'boc',   name:'中国银行',     short:'中行', bg:'#AA0000', def:21, logo:'https://www.boc.cn/favicon.ico'},
-  {id:'abc',   name:'中国农业银行', short:'农行', bg:'#007A33', def:21, logo:'https://www.abchina.com/favicon.ico'},
-  {id:'bocom', name:'交通银行',     short:'交行', bg:'#003087', def:23, logo:'https://www.bankcomm.com/favicon.ico'},
-  {id:'cmb',   name:'招商银行',     short:'招行', bg:'#CC0000', def:25, logo:'https://www.cmbchina.com/favicon.ico'},
-  {id:'psbc',  name:'邮政储蓄银行', short:'邮储', bg:'#007A33', def:21, logo:'https://www.psbc.com/favicon.ico'},
-  {id:'citic', name:'中信银行',     short:'中信', bg:'#0066CC', def:22, logo:'https://www.citicbank.com/favicon.ico'},
-  {id:'spdb',  name:'浦发银行',     short:'浦发', bg:'#E60012', def:24, logo:'https://www.spdb.com.cn/favicon.ico'},
-  {id:'ceb',   name:'光大银行',     short:'光大', bg:'#E60012', def:23, logo:'https://www.cebbank.com/favicon.ico'},
+  {id:'icbc',  name:'中国工商银行', short:'工行', bg:'#CC0000', def:22},
+  {id:'ccb',   name:'中国建设银行', short:'建行', bg:'#005BAC', def:22},
+  {id:'boc',   name:'中国银行',     short:'中行', bg:'#AA0000', def:21},
+  {id:'abc',   name:'中国农业银行', short:'农行', bg:'#007A33', def:21},
+  {id:'bocom', name:'交通银行',     short:'交行', bg:'#003087', def:23},
+  {id:'cmb',   name:'招商银行',     short:'招行', bg:'#CC0000', def:25},
+  {id:'psbc',  name:'邮政储蓄银行', short:'邮储', bg:'#007A33', def:21},
+  {id:'citic', name:'中信银行',     short:'中信', bg:'#0066CC', def:22},
+  {id:'spdb',  name:'浦发银行',     short:'浦发', bg:'#E60012', def:24},
+  {id:'ceb',   name:'光大银行',     short:'光大', bg:'#E05A00', def:23},
 ];
 const TROY = 31.1034768;
 const W = 100; // 固定100克
@@ -637,12 +654,9 @@ function setRange(days, el) {
 // 银行 Logo 渲染
 // ============================================================
 function bankLogoHtml(b, size=36) {
+  const uri = svgDataUri(b.id);
   return `<div class="blogo" style="background:${b.bg};padding:0;overflow:hidden">
-    <img src="${b.logo}" width="${size}" height="${size}"
-      style="object-fit:cover;border-radius:inherit;display:block"
-      onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
-      alt="${b.short}">
-    <span style="display:none;width:100%;height:100%;align-items:center;justify-content:center;font-size:${size>32?11:9}px;font-weight:800;color:white">${b.short}</span>
+    <img src="${uri}" width="${size}" height="${size}" style="display:block;border-radius:inherit" alt="${b.short}">
   </div>`;
 }
 
@@ -791,10 +805,7 @@ function renderCalBody() {
     const placeholder = spot ? `约 ${((spot+b.def)*W).toFixed(0)} 元` : '';
     return `
     <div class="ci">
-      <div class="clogo" style="background:${b.bg};padding:0;overflow:hidden">
-        <img src="${b.logo}" width="32" height="32" style="object-fit:cover;border-radius:inherit;display:block" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" alt="${b.short}">
-        <span style="display:none;width:100%;height:100%;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:white">${b.short}</span>
-      </div>
+      <div class="clogo" style="background:${b.bg};padding:0;overflow:hidden"><img src="${svgDataUri(b.id)}" width="32" height="32" style="display:block;border-radius:inherit" alt="${b.short}"></div>
       <div class="cname">${b.name}</div>
       <div class="cinput-w">
         <input class="cinput" id="ci_${b.id}" type="number" placeholder="${placeholder}" value="${savedVal}" oninput="onCiInput('${b.id}',this.value)">
