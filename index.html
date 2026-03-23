@@ -3,415 +3,801 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>银行实物金条价格对比</title>
+  <title>黄金买入时机分析</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; background: #0f1117; color: #e2e8f0; min-height: 100vh; }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;background:#0f1117;color:#e2e8f0;min-height:100vh}
 
-    /* ===== HEADER ===== */
-    header { background: linear-gradient(135deg, #1a1d2e, #16213e); border-bottom: 1px solid #2d3748; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
-    .header-left { display: flex; align-items: center; gap: 10px; }
-    .gold-icon { width: 36px; height: 36px; background: linear-gradient(135deg, #f6d365, #e8a020); border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 17px; }
-    h1 { font-size: 16px; font-weight: 700; color: #f7d794; }
-    .subtitle { font-size: 11px; color: #718096; margin-top: 1px; }
-    .header-right { display: flex; align-items: center; gap: 8px; }
-    .status-pill { display: flex; align-items: center; gap: 5px; background: #1a1d2e; border: 1px solid #2d3748; border-radius: 20px; padding: 5px 10px; font-size: 11px; color: #a0aec0; }
-    .dot { width: 6px; height: 6px; border-radius: 50%; background: #48bb78; }
-    .dot.loading { background: #ed8936; animation: blink .8s infinite; }
-    .dot.error { background: #fc8181; }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
-    .btn-calibrate { display: flex; align-items: center; gap: 5px; background: linear-gradient(135deg, #3d2b00, #4a3500); border: 1px solid #c8870a; border-radius: 20px; padding: 6px 12px; font-size: 12px; color: #f6d365; cursor: pointer; white-space: nowrap; }
-    .btn-calibrate:hover { background: linear-gradient(135deg, #4a3500, #5a4000); }
+    /* HEADER */
+    header{background:linear-gradient(135deg,#1a1d2e,#16213e);border-bottom:1px solid #2d3748;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+    .hl{display:flex;align-items:center;gap:9px}
+    .gi{width:34px;height:34px;background:linear-gradient(135deg,#f6d365,#e8a020);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px}
+    h1{font-size:15px;font-weight:700;color:#f7d794}
+    .sub{font-size:10px;color:#718096;margin-top:1px}
+    .hr{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+    .pill{display:flex;align-items:center;gap:5px;background:#1a1d2e;border:1px solid #2d3748;border-radius:20px;padding:4px 9px;font-size:11px;color:#a0aec0;cursor:pointer;white-space:nowrap}
+    .pill:hover{border-color:#4a5568}
+    .pill.gold{background:linear-gradient(135deg,#3d2b00,#4a3500);border-color:#c8870a;color:#f6d365}
+    .dot{width:6px;height:6px;border-radius:50%;background:#48bb78}
+    .dot.loading{background:#ed8936;animation:blink .8s infinite}
+    .dot.error{background:#fc8181}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
 
-    /* ===== CONTAINER ===== */
-    .container { max-width: 720px; margin: 0 auto; padding: 14px 16px; }
+    /* LAYOUT */
+    .wrap{max-width:720px;margin:0 auto;padding:12px 14px}
+    .card{background:#1a1d2e;border:1px solid #2d3748;border-radius:14px;padding:14px 16px;margin-bottom:12px;position:relative;overflow:hidden}
+    .card-top-bar{position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#f6d365,#e8a020)}
 
-    /* ===== SPOT CARD ===== */
-    .spot-card { background: linear-gradient(135deg, #1a1d2e, #1e2438); border: 1px solid #2d3748; border-radius: 14px; padding: 16px 18px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; position: relative; overflow: hidden; }
-    .spot-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, #f6d365, #e8a020); }
-    .spot-main .label { font-size: 11px; color: #718096; margin-bottom: 5px; }
-    .spot-price { font-size: 36px; font-weight: 800; color: #f7d794; letter-spacing: -1px; line-height: 1; }
-    .spot-unit { font-size: 13px; color: #718096; display: inline; }
-    .change-badge { display: inline-flex; align-items: center; font-size: 11px; font-weight: 500; padding: 2px 7px; border-radius: 10px; margin-top: 6px; }
-    .change-badge.up { background: rgba(72,187,120,.15); color: #68d391; }
-    .change-badge.down { background: rgba(252,129,74,.15); color: #fc8181; }
-    .change-badge.flat { background: rgba(113,128,150,.15); color: #718096; }
-    .spot-meta { text-align: right; flex-shrink: 0; }
-    .spot-meta .usd { font-size: 15px; color: #a0aec0; font-weight: 600; }
-    .spot-meta .lbl { font-size: 10px; color: #4a5568; margin-bottom: 2px; }
-    .spot-meta .rate { font-size: 10px; color: #4a5568; margin-top: 4px; }
+    /* SPOT CARD */
+    .spot-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+    .spot-lbl{font-size:10px;color:#718096;margin-bottom:4px}
+    .spot-price{font-size:34px;font-weight:800;color:#f7d794;letter-spacing:-1px;line-height:1}
+    .spot-unit{font-size:12px;color:#718096}
+    .change-row{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+    .cbadge{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:500;padding:3px 7px;border-radius:10px}
+    .cbadge.up{background:rgba(72,187,120,.15);color:#68d391}
+    .cbadge.down{background:rgba(252,129,74,.15);color:#fc8181}
+    .cbadge.flat{background:rgba(113,128,150,.12);color:#718096}
+    .cbadge .lbl{font-size:10px;opacity:.7;margin-right:2px}
+    .spot-right{text-align:right;flex-shrink:0}
+    .spot-right .usd{font-size:14px;font-weight:600;color:#a0aec0}
+    .spot-right .tiny{font-size:10px;color:#4a5568;margin-top:2px}
 
-    /* ===== WEIGHT TABS ===== */
-    .weight-tabs { display: flex; gap: 8px; margin-bottom: 12px; }
-    .weight-tab { flex: 1; padding: 9px 0; border-radius: 10px; border: 1px solid #2d3748; background: #1a1d2e; color: #718096; font-size: 14px; font-weight: 600; cursor: pointer; text-align: center; transition: all .15s; }
-    .weight-tab:hover { border-color: #4a5568; color: #a0aec0; }
-    .weight-tab.active { background: linear-gradient(135deg, #3d2b00, #4a3500); border-color: #c8870a; color: #f6d365; }
-    .weight-tab small { display: block; font-size: 10px; font-weight: 400; opacity: .7; margin-top: 1px; }
+    /* HIGH LOW BAR */
+    .hl-bar{margin-top:10px;padding-top:10px;border-top:1px solid #1e2235}
+    .hl-labels{display:flex;justify-content:space-between;font-size:10px;color:#4a5568;margin-bottom:5px}
+    .hl-track{height:6px;background:#2d3748;border-radius:3px;position:relative}
+    .hl-fill{height:100%;background:linear-gradient(90deg,#fc8181,#f6d365,#68d391);border-radius:3px;position:absolute;left:0}
+    .hl-cursor{width:10px;height:10px;background:#f7d794;border-radius:50%;position:absolute;top:-2px;transform:translateX(-50%);border:2px solid #1a1d2e}
+    .hl-pct{text-align:center;font-size:10px;color:#a0aec0;margin-top:4px}
 
-    /* ===== SECTION HEADER ===== */
-    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-    .section-title { font-size: 12px; color: #718096; }
-    .calibrated-count { font-size: 11px; color: #4a5568; }
+    /* CHART */
+    .chart-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+    .chart-title{font-size:12px;color:#a0aec0;font-weight:600}
+    .range-tabs{display:flex;gap:4px}
+    .rtab{padding:3px 8px;border-radius:6px;border:1px solid #2d3748;background:#0f1117;color:#718096;font-size:11px;cursor:pointer}
+    .rtab.active{border-color:#c8870a;color:#f6d365;background:rgba(200,135,10,.08)}
+    .chart-wrap{position:relative;height:160px}
+    .chart-empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#4a5568;font-size:12px;gap:6px;text-align:center}
+    .chart-empty .ico{font-size:28px}
 
-    /* ===== BANK LIST ===== */
-    .bank-list { display: flex; flex-direction: column; gap: 8px; }
-    .bank-item { background: #1a1d2e; border: 1px solid #2d3748; border-radius: 12px; padding: 13px 14px; display: flex; align-items: center; gap: 10px; transition: border-color .15s; position: relative; overflow: hidden; }
-    .bank-item:hover { border-color: #3d4a5c; }
-    .bank-item.rank-1 { border-color: #c8870a; }
-    .bank-item.rank-1::after { content: '最低价'; position: absolute; top: 0; right: 0; background: linear-gradient(135deg, #c8870a, #e8a020); color: white; font-size: 10px; font-weight: 600; padding: 2px 8px; border-bottom-left-radius: 8px; }
-    .rank-num { width: 22px; height: 22px; border-radius: 50%; background: #2d3748; color: #718096; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .rank-num.r1 { background: linear-gradient(135deg, #c8870a, #e8a020); color: white; }
-    .rank-num.r2 { background: #4a5568; color: #cbd5e0; }
-    .rank-num.r3 { background: #3d4a5c; color: #a0aec0; }
-    .bank-logo { width: 38px; height: 38px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: white; flex-shrink: 0; }
-    .bank-info { flex: 1; min-width: 0; }
-    .bank-name-row { display: flex; align-items: center; gap: 6px; }
-    .bank-name { font-size: 14px; font-weight: 600; color: #e2e8f0; }
-    .tag-real { background: rgba(72,187,120,.15); color: #68d391; font-size: 10px; padding: 1px 5px; border-radius: 4px; font-weight: 500; }
-    .tag-est { background: rgba(113,128,150,.12); color: #718096; font-size: 10px; padding: 1px 5px; border-radius: 4px; }
-    .bank-sub { font-size: 11px; color: #4a5568; margin-top: 2px; }
-    .bank-price-area { text-align: right; flex-shrink: 0; }
-    .total-price { font-size: 20px; font-weight: 800; color: #f7d794; letter-spacing: -.5px; }
-    .total-price .unit { font-size: 11px; font-weight: 400; color: #718096; }
-    .per-gram { font-size: 11px; color: #718096; margin-top: 2px; }
-    .premium-val { color: #fc8181; }
+    /* SECTION TITLE */
+    .sec-title{font-size:12px;font-weight:600;color:#a0aec0;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+    .sec-title::before{content:'';width:3px;height:13px;background:linear-gradient(#f6d365,#e8a020);border-radius:2px;flex-shrink:0}
 
-    /* ===== CALIBRATE MODAL ===== */
-    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 200; align-items: flex-end; justify-content: center; }
-    .modal-overlay.open { display: flex; }
-    .modal { background: #1a1d2e; border: 1px solid #2d3748; border-radius: 20px 20px 0 0; width: 100%; max-width: 720px; max-height: 85vh; display: flex; flex-direction: column; }
-    .modal-header { padding: 16px 18px 12px; border-bottom: 1px solid #2d3748; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
-    .modal-title { font-size: 16px; font-weight: 700; color: #f7d794; }
-    .modal-subtitle { font-size: 12px; color: #718096; margin-top: 2px; }
-    .btn-close { width: 28px; height: 28px; background: #2d3748; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #a0aec0; font-size: 16px; border: none; }
-    .modal-tip { margin: 12px 18px 0; padding: 10px 12px; background: rgba(200,135,10,.08); border: 1px solid rgba(200,135,10,.2); border-radius: 8px; font-size: 12px; color: #a0aec0; line-height: 1.6; }
-    .modal-tip b { color: #f6d365; }
+    /* ALERT */
+    .alert-row{display:flex;gap:8px;align-items:flex-end}
+    .alert-field{flex:1}
+    .alert-label{font-size:11px;color:#718096;margin-bottom:5px}
+    .alert-input{width:100%;background:#0f1117;border:1px solid #2d3748;border-radius:8px;padding:9px 12px;font-size:14px;color:#e2e8f0;outline:none}
+    .alert-input:focus{border-color:#c8870a}
+    .alert-input::placeholder{color:#4a5568;font-size:12px}
+    .btn-alert{padding:9px 14px;border-radius:8px;border:none;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+    .btn-alert.on{background:linear-gradient(135deg,#c8870a,#e8a020);color:white}
+    .btn-alert.off{background:#2d3748;color:#718096}
+    .alert-status{font-size:11px;margin-top:6px}
+    .alert-status.active{color:#68d391}
+    .alert-status.inactive{color:#4a5568}
+    .alert-tips{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+    .alert-tip-btn{padding:4px 10px;border-radius:6px;border:1px solid #2d3748;background:#0f1117;color:#718096;font-size:11px;cursor:pointer}
+    .alert-tip-btn:hover{border-color:#4a5568;color:#a0aec0}
 
-    /* 当前现货 */
-    .modal-spot { margin: 10px 18px; font-size: 12px; color: #718096; }
-    .modal-spot b { color: #f7d794; font-size: 14px; }
+    /* BANK LIST */
+    .bank-list{display:flex;flex-direction:column;gap:7px}
+    .bank-item{background:#0f1117;border:1px solid #2d3748;border-radius:10px;padding:11px 12px;display:flex;align-items:center;gap:9px;position:relative;overflow:hidden}
+    .bank-item.rank-1{border-color:#c8870a}
+    .bank-item.rank-1::after{content:'最低价';position:absolute;top:0;right:0;background:linear-gradient(135deg,#c8870a,#e8a020);color:white;font-size:9px;font-weight:600;padding:2px 7px;border-bottom-left-radius:7px}
+    .rn{width:20px;height:20px;border-radius:50%;background:#2d3748;color:#718096;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .rn.r1{background:linear-gradient(135deg,#c8870a,#e8a020);color:white}
+    .rn.r2{background:#4a5568;color:#cbd5e0}
+    .rn.r3{background:#3d4a5c;color:#a0aec0}
+    .blogo{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:white;flex-shrink:0}
+    .binfo{flex:1;min-width:0}
+    .bname-row{display:flex;align-items:center;gap:5px}
+    .bname{font-size:13px;font-weight:600}
+    .tag{font-size:9px;padding:1px 5px;border-radius:3px;font-weight:500}
+    .tag.real{background:rgba(72,187,120,.15);color:#68d391}
+    .tag.est{background:rgba(113,128,150,.1);color:#718096}
+    .bsub{font-size:10px;color:#4a5568;margin-top:1px}
+    .bprice{text-align:right;flex-shrink:0}
+    .btotal{font-size:18px;font-weight:800;color:#f7d794;letter-spacing:-.3px}
+    .btotal .u{font-size:10px;font-weight:400;color:#718096}
+    .bpg{font-size:10px;color:#718096;margin-top:1px}
+    .prem{color:#fc8181}
 
-    /* 重量选择 */
-    .modal-weights { display: flex; gap: 8px; padding: 0 18px 10px; border-bottom: 1px solid #2d3748; flex-shrink: 0; }
-    .modal-w-tab { flex: 1; padding: 7px 0; border-radius: 8px; border: 1px solid #2d3748; background: #0f1117; color: #718096; font-size: 13px; font-weight: 600; cursor: pointer; text-align: center; }
-    .modal-w-tab.active { border-color: #c8870a; color: #f6d365; background: rgba(200,135,10,.08); }
+    /* DCA CALCULATOR */
+    .dca-toggle{width:100%;background:none;border:none;text-align:left;cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:0}
+    .dca-arrow{font-size:12px;color:#718096;transition:transform .2s}
+    .dca-arrow.open{transform:rotate(180deg)}
+    .dca-body{overflow:hidden;transition:max-height .3s;max-height:0}
+    .dca-body.open{max-height:400px}
+    .dca-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+    .dca-field label{font-size:11px;color:#718096;display:block;margin-bottom:4px}
+    .dca-input{width:100%;background:#0f1117;border:1px solid #2d3748;border-radius:8px;padding:8px 10px;font-size:14px;color:#e2e8f0;outline:none}
+    .dca-input:focus{border-color:#c8870a}
+    .dca-result{margin-top:12px;background:#0f1117;border-radius:10px;padding:12px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+    .dca-result-item .val{font-size:16px;font-weight:700;color:#f7d794}
+    .dca-result-item .lbl{font-size:10px;color:#718096;margin-top:2px}
 
-    .modal-body { overflow-y: auto; flex: 1; padding: 10px 18px 16px; }
-    .cal-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #1e2235; }
-    .cal-item:last-child { border-bottom: none; }
-    .cal-logo { width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; color: white; flex-shrink: 0; }
-    .cal-bank-name { font-size: 13px; font-weight: 600; width: 90px; flex-shrink: 0; }
-    .cal-input-wrap { flex: 1; position: relative; }
-    .cal-input { width: 100%; background: #0f1117; border: 1px solid #2d3748; border-radius: 8px; padding: 8px 40px 8px 10px; font-size: 14px; color: #e2e8f0; outline: none; }
-    .cal-input:focus { border-color: #c8870a; }
-    .cal-input::placeholder { color: #4a5568; font-size: 12px; }
-    .cal-unit { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 11px; color: #4a5568; }
-    .cal-result { font-size: 11px; min-width: 70px; text-align: right; }
-    .cal-result.ok { color: #68d391; }
-    .cal-result.na { color: #4a5568; }
+    /* NOTICE */
+    .notice{background:#1a1d2e;border:1px solid #2d3748;border-left:3px solid #c8870a;border-radius:8px;padding:10px 12px;font-size:11px;color:#718096;line-height:1.7;margin-bottom:12px}
+    .notice b{color:#a0aec0}
+    footer{text-align:center;padding:12px;font-size:10px;color:#4a5568}
 
-    .modal-footer { padding: 12px 18px; border-top: 1px solid #2d3748; display: flex; gap: 8px; flex-shrink: 0; }
-    .btn-save { flex: 1; background: linear-gradient(135deg, #c8870a, #e8a020); color: white; border: none; border-radius: 10px; padding: 12px; font-size: 14px; font-weight: 700; cursor: pointer; }
-    .btn-save:hover { opacity: .9; }
-    .btn-reset { background: #2d3748; color: #718096; border: none; border-radius: 10px; padding: 12px 14px; font-size: 13px; cursor: pointer; }
-
-    /* ===== NOTICE ===== */
-    .notice { margin-top: 14px; background: #1a1d2e; border: 1px solid #2d3748; border-left: 3px solid #c8870a; border-radius: 8px; padding: 11px 13px; font-size: 11px; color: #718096; line-height: 1.7; }
-    .notice b { color: #a0aec0; }
-
-    footer { text-align: center; padding: 14px; font-size: 11px; color: #4a5568; }
-
-    /* skeleton */
-    .skel { display: inline-block; background: linear-gradient(90deg,#2d3748 25%,#3d4a5c 50%,#2d3748 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 4px; }
-    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+    /* MODAL */
+    .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:flex-end;justify-content:center}
+    .overlay.open{display:flex}
+    .modal{background:#1a1d2e;border:1px solid #2d3748;border-radius:18px 18px 0 0;width:100%;max-width:720px;max-height:82vh;display:flex;flex-direction:column}
+    .mh{padding:14px 16px 10px;border-bottom:1px solid #2d3748;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+    .mt{font-size:15px;font-weight:700;color:#f7d794}
+    .ms{font-size:11px;color:#718096;margin-top:1px}
+    .xbtn{width:26px;height:26px;background:#2d3748;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#a0aec0;font-size:14px;border:none}
+    .mtip{margin:10px 16px 0;padding:9px 11px;background:rgba(200,135,10,.07);border:1px solid rgba(200,135,10,.18);border-radius:7px;font-size:11px;color:#a0aec0;line-height:1.6}
+    .mtip b{color:#f6d365}
+    .mspot{margin:8px 16px;font-size:11px;color:#718096}
+    .mspot b{color:#f7d794;font-size:13px}
+    .mbody{overflow-y:auto;flex:1;padding:8px 16px 12px}
+    .ci{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid #1e2235}
+    .ci:last-child{border-bottom:none}
+    .clogo{width:32px;height:32px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:white;flex-shrink:0}
+    .cname{font-size:12px;font-weight:600;width:85px;flex-shrink:0}
+    .cinput-w{flex:1;position:relative}
+    .cinput{width:100%;background:#0f1117;border:1px solid #2d3748;border-radius:7px;padding:7px 34px 7px 9px;font-size:13px;color:#e2e8f0;outline:none}
+    .cinput:focus{border-color:#c8870a}
+    .cinput::placeholder{color:#4a5568;font-size:11px}
+    .cunit{position:absolute;right:7px;top:50%;transform:translateY(-50%);font-size:10px;color:#4a5568}
+    .cres{font-size:10px;min-width:60px;text-align:right}
+    .cres.ok{color:#68d391}
+    .cres.na{color:#4a5568}
+    .mfooter{padding:10px 16px;border-top:1px solid #2d3748;display:flex;gap:7px;flex-shrink:0}
+    .bsave{flex:1;background:linear-gradient(135deg,#c8870a,#e8a020);color:white;border:none;border-radius:9px;padding:11px;font-size:13px;font-weight:700;cursor:pointer}
+    .breset{background:#2d3748;color:#718096;border:none;border-radius:9px;padding:11px 13px;font-size:12px;cursor:pointer}
   </style>
 </head>
 <body>
 
 <header>
-  <div class="header-left">
-    <div class="gold-icon">🥇</div>
+  <div class="hl">
+    <div class="gi">🥇</div>
     <div>
-      <h1>实物金条价格对比</h1>
-      <div class="subtitle">Au9999 · 主要银行</div>
+      <h1>黄金买入时机分析</h1>
+      <div class="sub">Au9999 · 100克金条</div>
     </div>
   </div>
-  <div class="header-right">
-    <div class="status-pill">
-      <div class="dot loading" id="statusDot"></div>
-      <span id="statusText">加载中</span>
-    </div>
-    <div class="btn-calibrate" onclick="openModal()">
-      ✏️ 校准价格
-    </div>
+  <div class="hr">
+    <div class="pill"><div class="dot loading" id="sDot"></div><span id="sTxt">加载中</span></div>
+    <div class="pill" onclick="openNotifModal()">🔔 提醒</div>
+    <div class="pill gold" onclick="openCalModal()">✏️ 校准</div>
   </div>
 </header>
 
-<div class="container">
+<div class="wrap">
 
-  <!-- 现货价 -->
-  <div class="spot-card">
-    <div class="spot-main">
-      <div class="label">上海金现货参考价</div>
+  <!-- 现货价 + 涨跌幅 -->
+  <div class="card">
+    <div class="card-top-bar"></div>
+    <div class="spot-row">
       <div>
-        <span class="spot-price" id="spotCny"><span class="skel" style="width:130px;height:36px;display:inline-block;vertical-align:middle"></span></span>
-        <span class="spot-unit"> 元/克</span>
+        <div class="spot-lbl">上海金现货参考价</div>
+        <div><span class="spot-price" id="spotCny">—</span> <span class="spot-unit">元/克</span></div>
+        <div class="change-row">
+          <div class="cbadge flat" id="chgDay"><span class="lbl">今日</span>—</div>
+          <div class="cbadge flat" id="chgWeek"><span class="lbl">本周</span>—</div>
+          <div class="cbadge flat" id="chgMonth"><span class="lbl">本月</span>—</div>
+        </div>
       </div>
-      <div id="changeEl" class="change-badge flat">—</div>
+      <div class="spot-right">
+        <div class="tiny">国际金价</div>
+        <div class="usd" id="xauUsd">—</div>
+        <div class="tiny">美元/盎司</div>
+        <div class="tiny" id="fxRate" style="margin-top:5px">USD/CNY —</div>
+      </div>
     </div>
-    <div class="spot-meta">
-      <div class="lbl">国际金价</div>
-      <div class="usd" id="xauUsd">—</div>
-      <div class="rate">美元/盎司</div>
-      <div class="rate" id="fxRate" style="margin-top:5px">USD/CNY —</div>
+    <!-- 30天高低位 -->
+    <div class="hl-bar" id="hlBar" style="display:none">
+      <div class="hl-labels">
+        <span id="hlLow">—</span>
+        <span style="color:#a0aec0;font-size:10px">近30天区间</span>
+        <span id="hlHigh">—</span>
+      </div>
+      <div class="hl-track">
+        <div class="hl-fill" id="hlFill" style="width:0"></div>
+        <div class="hl-cursor" id="hlCursor" style="left:50%"></div>
+      </div>
+      <div class="hl-pct" id="hlPct">—</div>
     </div>
   </div>
 
-  <!-- 银行列表 -->
-  <div class="section-header">
-    <div class="section-title">各银行金条价格（100克，从低到高）</div>
-    <div class="calibrated-count" id="calCount"></div>
+  <!-- 走势图 -->
+  <div class="card">
+    <div class="chart-header">
+      <div class="chart-title">📈 历史走势</div>
+      <div class="range-tabs">
+        <div class="rtab active" onclick="setRange(7,this)">7天</div>
+        <div class="rtab" onclick="setRange(30,this)">30天</div>
+        <div class="rtab" onclick="setRange(90,this)">90天</div>
+      </div>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="priceChart"></canvas>
+      <div class="chart-empty" id="chartEmpty">
+        <div class="ico">📊</div>
+        <div>数据累积中</div>
+        <div style="font-size:10px;color:#4a5568">每次打开页面自动记录，<br>积累几天后显示走势图</div>
+        <div id="dataCountTip" style="font-size:11px;color:#718096;margin-top:4px"></div>
+      </div>
+    </div>
   </div>
-  <div class="bank-list" id="bankList"></div>
+
+  <!-- 目标价提醒 -->
+  <div class="card">
+    <div class="sec-title">🔔 目标价提醒</div>
+    <div class="alert-row">
+      <div class="alert-field">
+        <div class="alert-label">当金价跌到此价格时提醒我（元/克）</div>
+        <input class="alert-input" id="alertInput" type="number" placeholder="输入目标买入价，例如 920">
+      </div>
+      <button class="btn-alert off" id="alertBtn" onclick="toggleAlert()">开启提醒</button>
+    </div>
+    <div class="alert-tips">
+      <div class="alert-tip-btn" onclick="setAlertQuick(0.97)">低于当前 3%</div>
+      <div class="alert-tip-btn" onclick="setAlertQuick(0.95)">低于当前 5%</div>
+      <div class="alert-tip-btn" onclick="setAlertQuick('30dLow')">近30天最低</div>
+    </div>
+    <div class="alert-status inactive" id="alertStatus">未设置提醒</div>
+  </div>
+
+  <!-- 银行价格 -->
+  <div class="card" style="padding:12px 14px">
+    <div class="sec-title" style="margin-bottom:10px">🏦 各银行100克金条报价（从低到高）</div>
+    <div class="bank-list" id="bankList"></div>
+  </div>
+
+  <!-- 定投计算器 -->
+  <div class="card">
+    <button class="dca-toggle" onclick="toggleDca()">
+      <div class="sec-title" style="margin-bottom:0">🧮 定投计算器</div>
+      <div class="dca-arrow" id="dcaArrow">▼</div>
+    </button>
+    <div class="dca-body" id="dcaBody">
+      <div class="dca-grid">
+        <div class="dca-field">
+          <label>每月投入金额（元）</label>
+          <input class="dca-input" id="dcaAmt" type="number" placeholder="5000" oninput="calcDca()">
+        </div>
+        <div class="dca-field">
+          <label>计划投入期数（月）</label>
+          <input class="dca-input" id="dcaMon" type="number" placeholder="12" oninput="calcDca()">
+        </div>
+      </div>
+      <div class="dca-result" id="dcaResult" style="display:none">
+        <div class="dca-result-item"><div class="val" id="dcaTotalAmt">—</div><div class="lbl">总投入（元）</div></div>
+        <div class="dca-result-item"><div class="val" id="dcaTotalGrams">—</div><div class="lbl">累计购买（克）</div></div>
+        <div class="dca-result-item"><div class="val" id="dcaAvgPrice">—</div><div class="lbl">平均成本（元/克）</div></div>
+      </div>
+      <div style="font-size:10px;color:#4a5568;margin-top:8px;line-height:1.6">
+        * 按当前价格估算，定投可摊薄成本、降低择时风险。实际成本会随金价波动。
+      </div>
+    </div>
+  </div>
 
   <div class="notice">
-    <b>📌 说明：</b>现货价实时更新（30秒/次）。<b>实测</b>标签表示你已亲自校准该银行价格，溢价数据来自实际 App 报价。<b>估算</b>标签表示使用参考溢价，点击「校准价格」输入实际价格可提升精度。
+    <b>📌 走势图说明：</b>每次打开页面自动记录价格，数据越积越多。<b>涨跌幅</b>基于首次记录当日/周/月的基准价计算。<b>目标价提醒</b>在页面打开期间有效，需允许浏览器通知权限。银行价格中 <b>实测</b> 为你校准的真实溢价，<b>估算</b> 为参考值。
   </div>
 </div>
 
 <footer>数据仅供参考 · 不构成投资建议 · <span id="lastUpdate">—</span></footer>
 
-<!-- ===== 校准 Modal ===== -->
-<div class="modal-overlay" id="modalOverlay" onclick="onOverlayClick(event)">
+<!-- 校准 Modal -->
+<div class="overlay" id="calOverlay" onclick="onOvClick(event,'calOverlay')">
   <div class="modal">
-    <div class="modal-header">
-      <div>
-        <div class="modal-title">✏️ 校准银行金条价格</div>
-        <div class="modal-subtitle">从各银行 App 抄入当前总价，系统自动计算溢价</div>
-      </div>
-      <button class="btn-close" onclick="closeModal()">×</button>
+    <div class="mh">
+      <div><div class="mt">✏️ 校准银行金条价格</div><div class="ms">从各银行 App 输入100克金条当前总价</div></div>
+      <button class="xbtn" onclick="closeModal('calOverlay')">×</button>
     </div>
-
-    <div class="modal-tip">
-      <b>操作方法：</b>打开银行 App → 找到对应重量金条 → 把页面上显示的 <b>总价（元）</b> 填入对应输入框，系统会自动算出溢价并保存。
+    <div class="mtip"><b>操作：</b>打开银行 App → 找100克 Au9999 金条 → 把总价填入对应输入框，右边自动显示溢价。</div>
+    <div class="mspot">当前现货：<b id="mSpot">—</b> 元/克</div>
+    <div class="mbody" id="calBody"></div>
+    <div class="mfooter">
+      <button class="breset" onclick="resetCal()">清除校准</button>
+      <button class="bsave" onclick="saveCal()">💾 保存校准数据</button>
     </div>
+  </div>
+</div>
 
-    <div class="modal-spot" id="modalSpotInfo">当前现货：<b id="modalSpot">—</b> 元/克</div>
-
-    <div class="modal-body" id="modalBody"></div>
-
-    <div class="modal-footer">
-      <button class="btn-reset" onclick="resetCalibration()">清除校准</button>
-      <button class="btn-save" onclick="saveCalibration()">💾 保存校准数据</button>
+<!-- 提醒设置 Modal -->
+<div class="overlay" id="notifOverlay" onclick="onOvClick(event,'notifOverlay')">
+  <div class="modal" style="max-height:60vh">
+    <div class="mh">
+      <div><div class="mt">🔔 浏览器通知说明</div></div>
+      <button class="xbtn" onclick="closeModal('notifOverlay')">×</button>
+    </div>
+    <div class="mbody" style="padding:16px">
+      <p style="font-size:13px;color:#a0aec0;line-height:1.8">
+        目标价提醒通过<b style="color:#f7d794">浏览器通知</b>实现，需要以下条件：<br><br>
+        1. 在目标价输入框填入价格，点击「开启提醒」<br>
+        2. 浏览器弹出权限请求时点击「允许」<br>
+        3. <b style="color:#fc8181">页面需保持打开</b>，价格每30秒检查一次<br>
+        4. 金价跌至目标价时，弹出系统通知<br><br>
+        <span style="color:#718096;font-size:11px">💡 建议：在电脑上打开页面挂着，手机版 Safari 不支持通知</span>
+      </p>
     </div>
   </div>
 </div>
 
 <script>
-// ===== 银行配置（默认参考溢价）=====
+// ============================================================
+// 配置
+// ============================================================
 const BANKS = [
-  { id: 'icbc',     name: '中国工商银行', short: '工行', bg: '#CC0000', defaultFee: { 10: 70, 50: 28, 100: 22 } },
-  { id: 'ccb',      name: '中国建设银行', short: '建行', bg: '#005BAC', defaultFee: { 10: 68, 50: 28, 100: 22 } },
-  { id: 'boc',      name: '中国银行',     short: '中行', bg: '#AA0000', defaultFee: { 10: 68, 50: 27, 100: 21 } },
-  { id: 'abc',      name: '中国农业银行', short: '农行', bg: '#007A33', defaultFee: { 10: 65, 50: 26, 100: 21 } },
-  { id: 'bocom',    name: '交通银行',     short: '交行', bg: '#003087', defaultFee: { 10: 72, 50: 29, 100: 23 } },
-  { id: 'cmb',      name: '招商银行',     short: '招行', bg: '#CC0000', defaultFee: { 10: 78, 50: 32, 100: 25 } },
-  { id: 'psbc',     name: '邮政储蓄银行', short: '邮储', bg: '#007A33', defaultFee: { 10: 66, 50: 27, 100: 21 } },
-  { id: 'citic',    name: '中信银行',     short: '中信', bg: '#0066CC', defaultFee: { 10: 70, 50: 28, 100: 22 } },
-  { id: 'spdb',     name: '浦发银行',     short: '浦发', bg: '#E60012', defaultFee: { 10: 72, 50: 30, 100: 24 } },
-  { id: 'ceb',      name: '光大银行',     short: '光大', bg: '#E60012', defaultFee: { 10: 70, 50: 29, 100: 23 } },
+  {id:'icbc',  name:'中国工商银行', short:'工行', bg:'#CC0000', def:22},
+  {id:'ccb',   name:'中国建设银行', short:'建行', bg:'#005BAC', def:22},
+  {id:'boc',   name:'中国银行',     short:'中行', bg:'#AA0000', def:21},
+  {id:'abc',   name:'中国农业银行', short:'农行', bg:'#007A33', def:21},
+  {id:'bocom', name:'交通银行',     short:'交行', bg:'#003087', def:23},
+  {id:'cmb',   name:'招商银行',     short:'招行', bg:'#CC0000', def:25},
+  {id:'psbc',  name:'邮政储蓄银行', short:'邮储', bg:'#007A33', def:21},
+  {id:'citic', name:'中信银行',     short:'中信', bg:'#0066CC', def:22},
+  {id:'spdb',  name:'浦发银行',     short:'浦发', bg:'#E60012', def:24},
+  {id:'ceb',   name:'光大银行',     short:'光大', bg:'#E60012', def:23},
 ];
-
 const TROY = 31.1034768;
+const W = 100; // 固定100克
 
-// ===== 状态 =====
-let state = { spotCny: null, xauUsd: null, usdCny: null, prevXauUsd: null, weight: 100, modalWeight: 100 };
+// ============================================================
+// 状态
+// ============================================================
+let state = {spot:null, xauUsd:null, usdCny:null, chartRange:7, alertActive:false, alertPrice:null, dcaOpen:false};
 
-// 校准数据存 localStorage: { bankId_weight: premium }
-function loadCal() {
-  try { return JSON.parse(localStorage.getItem('goldCal') || '{}'); } catch { return {}; }
+// ============================================================
+// 本地存储工具
+// ============================================================
+const LS = {
+  get: k => { try{ return JSON.parse(localStorage.getItem(k)) }catch{ return null } },
+  set: (k,v) => localStorage.setItem(k, JSON.stringify(v)),
+};
+
+// 价格历史: [{t: timestamp_ms, p: price_cny}]
+function getHistory() { return LS.get('goldHistory') || []; }
+function addHistory(price) {
+  const h = getHistory();
+  const now = Date.now();
+  // 每5分钟记录一次（避免30秒刷新堆积太快）
+  if (h.length && now - h[h.length-1].t < 5*60*1000) {
+    h[h.length-1].p = price; // 更新最后一条
+  } else {
+    h.push({t: now, p: price});
+  }
+  // 只保留90天数据
+  const cutoff = now - 90*24*60*60*1000;
+  const trimmed = h.filter(d => d.t >= cutoff);
+  LS.set('goldHistory', trimmed);
+  return trimmed;
 }
-function saveCal(data) { localStorage.setItem('goldCal', JSON.stringify(data)); }
-function loadCalTime() { return localStorage.getItem('goldCalTime') || null; }
-function saveCalTime() { localStorage.setItem('goldCalTime', new Date().toLocaleString('zh-CN')); }
 
-// ===== API =====
+// 基准价（用于涨跌幅计算）
+function getBasePrices() { return LS.get('goldBase') || {}; }
+function updateBasePrices(price) {
+  const base = getBasePrices();
+  const now = new Date();
+  const dayKey  = `${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}`;
+  const weekKey = `${now.getFullYear()}-W${getWeekNum(now)}`;
+  const monKey  = `${now.getFullYear()}-${now.getMonth()+1}`;
+  if (!base.day  || base.dayKey  !== dayKey)  { base.day=price;  base.dayKey=dayKey; }
+  if (!base.week || base.weekKey !== weekKey) { base.week=price; base.weekKey=weekKey; }
+  if (!base.mon  || base.monKey  !== monKey)  { base.mon=price;  base.monKey=monKey; }
+  LS.set('goldBase', base);
+  return base;
+}
+function getWeekNum(d) {
+  const onejan = new Date(d.getFullYear(), 0, 1);
+  return Math.ceil((((d-onejan)/86400000)+onejan.getDay()+1)/7);
+}
+
+// 校准数据
+function getCal() { return LS.get('goldCal') || {}; }
+function setCal(v) { LS.set('goldCal', v); }
+
+// ============================================================
+// API
+// ============================================================
 async function fetchXauUsd() {
   const r = await fetch('https://api.gold-api.com/price/XAU');
-  if (!r.ok) throw new Error('金价请求失败');
-  const d = await r.json();
-  return d.price;
+  if(!r.ok) throw new Error('金价失败');
+  return (await r.json()).price;
 }
 async function fetchUsdCny() {
   const r = await fetch('https://api.frankfurter.app/latest?from=USD&to=CNY');
-  if (!r.ok) throw new Error('汇率请求失败');
-  const d = await r.json();
-  return d.rates.CNY;
+  if(!r.ok) throw new Error('汇率失败');
+  return (await r.json()).rates.CNY;
 }
 
-// ===== UI 辅助 =====
-function setStatus(type, text) {
-  document.getElementById('statusDot').className = 'dot ' + (type === 'loading' ? 'loading' : type === 'error' ? 'error' : '');
-  document.getElementById('statusText').textContent = text;
-}
-
-function renderChange(el, curr, prev) {
-  if (!prev) { el.textContent = '—'; el.className = 'change-badge flat'; return; }
-  const diff = curr - prev, pct = diff / prev * 100;
-  if (diff > 0) { el.innerHTML = `▲ +${diff.toFixed(2)} (+${pct.toFixed(2)}%)`; el.className = 'change-badge up'; }
-  else if (diff < 0) { el.innerHTML = `▼ ${diff.toFixed(2)} (${pct.toFixed(2)}%)`; el.className = 'change-badge down'; }
-  else { el.textContent = '持平'; el.className = 'change-badge flat'; }
-}
-
-function getPremium(bank, weight) {
-  const cal = loadCal();
-  const key = `${bank.id}_${weight}`;
-  return { premium: cal[key] ?? bank.defaultFee[weight], isReal: key in cal };
-}
-
-function renderBanks(spot, weight) {
-  const cal = loadCal();
-  const calKeys = Object.keys(cal);
-  const calledCount = BANKS.filter(b => `${b.id}_${weight}` in cal).length;
-  document.getElementById('calCount').textContent = calledCount > 0
-    ? `✅ 已校准 ${calledCount}/${BANKS.length} 家`
-    : '未校准（使用估算值）';
-
-  const list = BANKS.map(b => {
-    const { premium, isReal } = getPremium(b, weight);
-    return { ...b, premium, isReal, totalPerGram: spot + premium, totalPrice: (spot + premium) * weight };
-  }).sort((a, b) => a.totalPerGram - b.totalPerGram);
-
-  document.getElementById('bankList').innerHTML = list.map((b, i) => {
-    const rank = i + 1;
-    const rc = rank === 1 ? 'r1' : rank === 2 ? 'r2' : rank === 3 ? 'r3' : '';
-    return `
-    <div class="bank-item ${rank === 1 ? 'rank-1' : ''}">
-      <div class="rank-num ${rc}">${rank}</div>
-      <div class="bank-logo" style="background:${b.bg}">${b.short}</div>
-      <div class="bank-info">
-        <div class="bank-name-row">
-          <span class="bank-name">${b.name}</span>
-          <span class="${b.isReal ? 'tag-real' : 'tag-est'}">${b.isReal ? '实测' : '估算'}</span>
-        </div>
-        <div class="bank-sub">Au9999 · ${weight}克 · 溢价 <span class="premium-val">+${b.premium}</span>元/克</div>
-      </div>
-      <div class="bank-price-area">
-        <div class="total-price">¥${b.totalPrice.toFixed(0)}<span class="unit"> 元</span></div>
-        <div class="per-gram">${b.totalPerGram.toFixed(2)} 元/克</div>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-
-// ===== 刷新数据 =====
+// ============================================================
+// 刷新主数据
+// ============================================================
 async function refresh() {
-  setStatus('loading', '更新中');
+  setStatus('loading','更新中');
   try {
     const [xauUsd, usdCny] = await Promise.all([fetchXauUsd(), fetchUsdCny()]);
-    const spotCny = (xauUsd * usdCny) / TROY;
-    const prev = state.xauUsd;
-    state.xauUsd = xauUsd; state.usdCny = usdCny; state.spotCny = spotCny;
+    const spot = (xauUsd * usdCny) / TROY;
+    state.xauUsd = xauUsd; state.usdCny = usdCny; state.spot = spot;
 
-    document.getElementById('spotCny').textContent = spotCny.toFixed(2);
+    // 存历史 & 基准
+    const history = addHistory(spot);
+    const base = updateBasePrices(spot);
+
+    // 现货卡片
+    document.getElementById('spotCny').textContent = spot.toFixed(2);
     document.getElementById('xauUsd').textContent = xauUsd.toFixed(0);
     document.getElementById('fxRate').textContent = `USD/CNY ${usdCny.toFixed(4)}`;
-    renderChange(document.getElementById('changeEl'), spotCny, prev ? (prev * usdCny) / TROY : null);
-    renderBanks(spotCny, state.weight);
 
-    const now = new Date();
-    setStatus('live', now.toLocaleTimeString('zh-CN'));
-    document.getElementById('lastUpdate').textContent = '更新于 ' + now.toLocaleString('zh-CN');
+    // 涨跌幅
+    renderChangeBadge('chgDay',  spot, base.day,  '今日');
+    renderChangeBadge('chgWeek', spot, base.week, '本周');
+    renderChangeBadge('chgMonth',spot, base.mon,  '本月');
+
+    // 高低位
+    renderHlBar(history, spot);
+
+    // 走势图
+    renderChart(history, state.chartRange);
+
+    // 银行列表
+    renderBanks(spot);
+
+    // 检查提醒
+    checkAlert(spot);
+
+    setStatus('live', new Date().toLocaleTimeString('zh-CN'));
+    document.getElementById('lastUpdate').textContent = '更新于 ' + new Date().toLocaleString('zh-CN');
   } catch(e) {
-    setStatus('error', '获取失败');
-    if (state.spotCny) renderBanks(state.spotCny, state.weight);
+    setStatus('error','获取失败');
+    if(state.spot) renderBanks(state.spot);
   }
 }
 
-// ===== 校准 Modal =====
-function openModal() {
-  document.getElementById('modalOverlay').classList.add('open');
-  renderModalBanks(state.modalWeight);
-  if (state.spotCny) document.getElementById('modalSpot').textContent = state.spotCny.toFixed(2);
-}
-function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
-function onOverlayClick(e) { if (e.target === document.getElementById('modalOverlay')) closeModal(); }
-
-
-function renderModalBanks(weight) {
-  const cal = loadCal();
-  const spot = state.spotCny;
-  document.getElementById('modalBody').innerHTML = BANKS.map(b => {
-    const key = `${b.id}_${weight}`;
-    const existingPremium = cal[key];
-    const placeholder = spot ? `约 ${((spot + b.defaultFee[weight]) * weight).toFixed(0)}` : '';
-    const savedVal = existingPremium != null && spot ? ((spot + existingPremium) * weight).toFixed(0) : '';
-    return `
-    <div class="cal-item">
-      <div class="cal-logo" style="background:${b.bg}">${b.short}</div>
-      <div class="cal-bank-name">${b.name}</div>
-      <div class="cal-input-wrap">
-        <input class="cal-input" type="number" id="cal_${b.id}" placeholder="${placeholder} 元（${weight}克总价）" value="${savedVal}" oninput="onCalInput('${b.id}', ${weight}, this.value)">
-        <span class="cal-unit">元</span>
-      </div>
-      <div class="cal-result ${existingPremium != null ? 'ok' : 'na'}" id="calres_${b.id}">
-        ${existingPremium != null ? `+${existingPremium.toFixed(1)}/克` : '未校准'}
-      </div>
-    </div>`;
-  }).join('');
+// ============================================================
+// UI 渲染
+// ============================================================
+function setStatus(type, txt) {
+  document.getElementById('sDot').className = 'dot ' + (type==='loading'?'loading':type==='error'?'error':'');
+  document.getElementById('sTxt').textContent = txt;
 }
 
-function onCalInput(bankId, weight, val) {
-  const totalPrice = parseFloat(val);
-  const spot = state.spotCny;
-  const resEl = document.getElementById(`calres_${bankId}`);
-  if (!isNaN(totalPrice) && totalPrice > 0 && spot) {
-    const premium = totalPrice / weight - spot;
-    if (premium > 0 && premium < 500) {
-      resEl.textContent = `+${premium.toFixed(1)}/克`;
-      resEl.className = 'cal-result ok';
-    } else {
-      resEl.textContent = '数值异常';
-      resEl.className = 'cal-result na';
-    }
-  } else {
-    resEl.textContent = '—';
-    resEl.className = 'cal-result na';
+function renderChangeBadge(id, cur, base, label) {
+  const el = document.getElementById(id);
+  if (!base) { el.innerHTML=`<span class="lbl">${label}</span>—`; el.className='cbadge flat'; return; }
+  const d = cur - base, pct = d/base*100;
+  const cls = d>0?'up':d<0?'down':'flat';
+  const arrow = d>0?'▲':d<0?'▼':'—';
+  el.innerHTML = `<span class="lbl">${label}</span>${arrow} ${Math.abs(pct).toFixed(2)}%`;
+  el.className = 'cbadge ' + cls;
+}
+
+function renderHlBar(history, spot) {
+  const bar = document.getElementById('hlBar');
+  if (history.length < 3) { bar.style.display='none'; return; }
+  const cutoff = Date.now() - 30*24*60*60*1000;
+  const recent = history.filter(d=>d.t>=cutoff).map(d=>d.p);
+  if (recent.length < 2) { bar.style.display='none'; return; }
+  bar.style.display='block';
+  const lo = Math.min(...recent), hi = Math.max(...recent);
+  const pct = (hi>lo) ? (spot-lo)/(hi-lo)*100 : 50;
+  document.getElementById('hlLow').textContent = '¥'+lo.toFixed(1);
+  document.getElementById('hlHigh').textContent = '¥'+hi.toFixed(1);
+  document.getElementById('hlFill').style.width = pct+'%';
+  document.getElementById('hlCursor').style.left = pct+'%';
+  const label = pct<=20?'📍 接近近期低位，较好买点':pct>=80?'📍 接近近期高位，可等待回调':'📍 处于近期中间区间';
+  document.getElementById('hlPct').textContent = label + `（距低点+${(spot-lo).toFixed(1)}，距高点-${(hi-spot).toFixed(1)}）`;
+}
+
+// ============================================================
+// Chart.js 走势图
+// ============================================================
+let chart = null;
+function renderChart(history, days) {
+  const canvas = document.getElementById('priceChart');
+  const emptyEl = document.getElementById('chartEmpty');
+  const cutoff = Date.now() - days*24*60*60*1000;
+  const data = history.filter(d=>d.t>=cutoff);
+
+  document.getElementById('dataCountTip').textContent = `已累积 ${history.length} 个数据点`;
+
+  if (data.length < 2) {
+    canvas.style.display='none';
+    emptyEl.style.display='flex';
+    return;
   }
-}
+  canvas.style.display='block';
+  emptyEl.style.display='none';
 
-function saveCalibration() {
-  const cal = loadCal();
-  const weight = state.modalWeight;
-  const spot = state.spotCny;
-  let saved = 0;
-  BANKS.forEach(b => {
-    const val = parseFloat(document.getElementById(`cal_${b.id}`)?.value);
-    if (!isNaN(val) && val > 0 && spot) {
-      const premium = val / weight - spot;
-      if (premium > 0 && premium < 500) {
-        cal[`${b.id}_${weight}`] = parseFloat(premium.toFixed(2));
-        saved++;
+  const labels = data.map(d => {
+    const dt = new Date(d.t);
+    return `${dt.getMonth()+1}/${dt.getDate()} ${dt.getHours().toString().padStart(2,'0')}:${dt.getMinutes().toString().padStart(2,'0')}`;
+  });
+  const prices = data.map(d=>d.p);
+
+  // 计算7日均线
+  const ma7 = prices.map((_,i)=>{
+    const slice = prices.slice(Math.max(0,i-6),i+1);
+    return slice.reduce((a,b)=>a+b,0)/slice.length;
+  });
+
+  const datasets = [{
+    label: '金价 元/克',
+    data: prices,
+    borderColor: '#f6d365',
+    backgroundColor: 'rgba(246,211,101,.08)',
+    borderWidth: 1.5,
+    pointRadius: data.length>50?0:2,
+    tension: 0.3,
+    fill: true,
+  }];
+
+  if (data.length >= 7) {
+    datasets.push({
+      label: '7日均线',
+      data: ma7,
+      borderColor: '#68d391',
+      borderWidth: 1,
+      pointRadius: 0,
+      tension: 0.3,
+      borderDash: [4,3],
+    });
+  }
+
+  if (chart) { chart.destroy(); }
+  chart = new Chart(canvas, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { intersect: false, mode: 'index' },
+      plugins: {
+        legend: { labels: { color: '#718096', font:{size:11}, boxWidth:20 } },
+        tooltip: {
+          backgroundColor: '#1e2438', borderColor: '#2d3748', borderWidth: 1,
+          titleColor: '#a0aec0', bodyColor: '#f7d794', titleFont:{size:11}, bodyFont:{size:13},
+          callbacks: { label: ctx => ` ¥${ctx.raw.toFixed(2)} 元/克` }
+        }
+      },
+      scales: {
+        x: { ticks:{color:'#4a5568',font:{size:9},maxTicksLimit:6,maxRotation:0}, grid:{color:'#1e2235'} },
+        y: { ticks:{color:'#718096',font:{size:10}, callback:v=>'¥'+v.toFixed(0)}, grid:{color:'#1e2235'} }
       }
     }
   });
-  saveCal(cal);
-  saveCalTime();
-  closeModal();
-  if (state.spotCny) renderBanks(state.spotCny, state.weight);
-  if (saved > 0) alert(`✅ 已保存 ${saved} 家银行的 ${weight}克 校准数据`);
 }
 
-function resetCalibration() {
-  if (!confirm('确认清除所有校准数据，恢复为估算值？')) return;
+function setRange(days, el) {
+  state.chartRange = days;
+  document.querySelectorAll('.rtab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  const h = getHistory();
+  if (state.spot) renderChart(h, days);
+}
+
+// ============================================================
+// 银行列表
+// ============================================================
+function renderBanks(spot) {
+  const cal = getCal();
+  const list = BANKS.map(b=>{
+    const key = `${b.id}_100`;
+    const prem = cal[key] ?? b.def;
+    const isReal = key in cal;
+    return {...b, prem, isReal, pg: spot+prem, total:(spot+prem)*W};
+  }).sort((a,b)=>a.pg-b.pg);
+
+  const cal30 = getCal(); // same
+  const calCount = BANKS.filter(b=>`${b.id}_100` in cal30).length;
+
+  document.getElementById('bankList').innerHTML = list.map((b,i)=>{
+    const rank=i+1, rc=rank===1?'r1':rank===2?'r2':rank===3?'r3':'';
+    return `
+    <div class="bank-item ${rank===1?'rank-1':''}">
+      <div class="rn ${rc}">${rank}</div>
+      <div class="blogo" style="background:${b.bg}">${b.short}</div>
+      <div class="binfo">
+        <div class="bname-row"><span class="bname">${b.name}</span><span class="tag ${b.isReal?'real':'est'}">${b.isReal?'实测':'估算'}</span></div>
+        <div class="bsub">溢价 <span class="prem">+${b.prem}</span> 元/克</div>
+      </div>
+      <div class="bprice">
+        <div class="btotal">¥${b.total.toFixed(0)}<span class="u"> 元</span></div>
+        <div class="bpg">${b.pg.toFixed(2)} 元/克</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ============================================================
+// 目标价提醒
+// ============================================================
+function toggleAlert() {
+  if (state.alertActive) {
+    disableAlert();
+  } else {
+    enableAlert();
+  }
+}
+
+async function enableAlert() {
+  const val = parseFloat(document.getElementById('alertInput').value);
+  if (isNaN(val) || val <= 0) { alert('请先输入有效的目标价格'); return; }
+  // 请求通知权限
+  let perm = Notification.permission;
+  if (perm === 'default') perm = await Notification.requestPermission();
+  if (perm !== 'granted') {
+    document.getElementById('alertStatus').textContent = '⚠️ 请允许浏览器通知权限';
+    document.getElementById('alertStatus').className = 'alert-status inactive';
+    openModal('notifOverlay');
+    return;
+  }
+  state.alertPrice = val;
+  state.alertActive = true;
+  LS.set('alertPrice', val);
+  document.getElementById('alertBtn').textContent = '关闭提醒';
+  document.getElementById('alertBtn').className = 'btn-alert on';
+  document.getElementById('alertStatus').textContent = `✅ 提醒已开启：金价 ≤ ¥${val} 元/克时通知你`;
+  document.getElementById('alertStatus').className = 'alert-status active';
+}
+
+function disableAlert() {
+  state.alertActive = false;
+  state.alertPrice = null;
+  document.getElementById('alertBtn').textContent = '开启提醒';
+  document.getElementById('alertBtn').className = 'btn-alert off';
+  document.getElementById('alertStatus').textContent = '已关闭提醒';
+  document.getElementById('alertStatus').className = 'alert-status inactive';
+}
+
+function checkAlert(spot) {
+  if (!state.alertActive || !state.alertPrice) return;
+  if (spot <= state.alertPrice) {
+    const title = '🥇 黄金到达目标价！';
+    const body = `当前金价 ¥${spot.toFixed(2)}/克，已达到你的目标价 ¥${state.alertPrice}/克`;
+    new Notification(title, {body, icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🥇</text></svg>'});
+    disableAlert(); // 触发后关闭，避免重复
+  }
+}
+
+function setAlertQuick(type) {
+  if (!state.spot) return;
+  let price;
+  if (type === '30dLow') {
+    const h = getHistory().filter(d=>d.t>=Date.now()-30*24*60*60*1000);
+    if (!h.length) { alert('暂无近30天数据'); return; }
+    price = Math.min(...h.map(d=>d.p));
+  } else {
+    price = state.spot * type;
+  }
+  document.getElementById('alertInput').value = price.toFixed(2);
+}
+
+// ============================================================
+// 定投计算器
+// ============================================================
+function toggleDca() {
+  state.dcaOpen = !state.dcaOpen;
+  document.getElementById('dcaBody').classList.toggle('open', state.dcaOpen);
+  document.getElementById('dcaArrow').classList.toggle('open', state.dcaOpen);
+}
+
+function calcDca() {
+  const amt = parseFloat(document.getElementById('dcaAmt').value);
+  const mon = parseFloat(document.getElementById('dcaMon').value);
+  const spot = state.spot;
+  const res = document.getElementById('dcaResult');
+  if (!amt || !mon || !spot) { res.style.display='none'; return; }
+
+  const totalAmt = amt * mon;
+  // 定投每月按当时价格买，这里简化为当前价格
+  // 实际定投的平均成本约等于当前价（如果价格随机游走）
+  const totalGrams = totalAmt / spot;
+  const avgPrice = spot; // 简化：当前价格作为参考
+
+  res.style.display='grid';
+  document.getElementById('dcaTotalAmt').textContent = '¥'+(totalAmt/10000).toFixed(1)+'万';
+  document.getElementById('dcaTotalGrams').textContent = totalGrams.toFixed(1)+'克';
+  document.getElementById('dcaAvgPrice').textContent = '¥'+avgPrice.toFixed(1);
+}
+
+// ============================================================
+// 校准 Modal
+// ============================================================
+function openCalModal() {
+  document.getElementById('calOverlay').classList.add('open');
+  if (state.spot) document.getElementById('mSpot').textContent = state.spot.toFixed(2);
+  renderCalBody();
+}
+
+function renderCalBody() {
+  const cal = getCal();
+  const spot = state.spot;
+  document.getElementById('calBody').innerHTML = BANKS.map(b=>{
+    const key = `${b.id}_100`;
+    const existPrem = cal[key];
+    const savedVal = existPrem!=null&&spot ? ((spot+existPrem)*W).toFixed(0) : '';
+    const placeholder = spot ? `约 ${((spot+b.def)*W).toFixed(0)} 元` : '';
+    return `
+    <div class="ci">
+      <div class="clogo" style="background:${b.bg}">${b.short}</div>
+      <div class="cname">${b.name}</div>
+      <div class="cinput-w">
+        <input class="cinput" id="ci_${b.id}" type="number" placeholder="${placeholder}" value="${savedVal}" oninput="onCiInput('${b.id}',this.value)">
+        <span class="cunit">元</span>
+      </div>
+      <div class="cres ${existPrem!=null?'ok':'na'}" id="cr_${b.id}">${existPrem!=null?'+'+existPrem.toFixed(1)+'/克':'未校准'}</div>
+    </div>`;
+  }).join('');
+}
+
+function onCiInput(id, val) {
+  const v = parseFloat(val), spot = state.spot;
+  const el = document.getElementById(`cr_${id}`);
+  if (!isNaN(v)&&v>0&&spot) {
+    const prem = v/W - spot;
+    el.textContent = (prem>0&&prem<500) ? '+'+prem.toFixed(1)+'/克' : '数值异常';
+    el.className = 'cres '+(prem>0&&prem<500?'ok':'na');
+  } else { el.textContent='—'; el.className='cres na'; }
+}
+
+function saveCal() {
+  const cal = getCal(), spot = state.spot;
+  let n=0;
+  BANKS.forEach(b=>{
+    const v = parseFloat(document.getElementById(`ci_${b.id}`)?.value);
+    if (!isNaN(v)&&v>0&&spot) {
+      const prem = v/W - spot;
+      if (prem>0&&prem<500) { cal[`${b.id}_100`]=parseFloat(prem.toFixed(2)); n++; }
+    }
+  });
+  setCal(cal);
+  closeModal('calOverlay');
+  if (state.spot) renderBanks(state.spot);
+  if (n>0) alert(`✅ 已保存 ${n} 家银行校准数据`);
+}
+
+function resetCal() {
+  if (!confirm('确认清除所有校准数据？')) return;
   localStorage.removeItem('goldCal');
-  localStorage.removeItem('goldCalTime');
-  renderModalBanks(state.modalWeight);
-  if (state.spotCny) renderBanks(state.spotCny, state.weight);
+  renderCalBody();
+  if (state.spot) renderBanks(state.spot);
 }
 
-// ===== 启动 =====
+// ============================================================
+// 通知 Modal
+// ============================================================
+function openNotifModal() { openModal('notifOverlay'); }
+
+// ============================================================
+// Modal 通用
+// ============================================================
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function onOvClick(e,id) { if(e.target===document.getElementById(id)) closeModal(id); }
+
+// ============================================================
+// 恢复提醒状态
+// ============================================================
+function restoreAlertState() {
+  const saved = LS.get('alertPrice');
+  if (saved && Notification.permission==='granted') {
+    state.alertPrice = saved;
+    state.alertActive = true;
+    document.getElementById('alertInput').value = saved;
+    document.getElementById('alertBtn').textContent = '关闭提醒';
+    document.getElementById('alertBtn').className = 'btn-alert on';
+    document.getElementById('alertStatus').textContent = `✅ 提醒已开启：金价 ≤ ¥${saved} 元/克时通知你`;
+    document.getElementById('alertStatus').className = 'alert-status active';
+  }
+}
+
+// ============================================================
+// 启动
+// ============================================================
+restoreAlertState();
 refresh();
 setInterval(refresh, 30000);
 </script>
