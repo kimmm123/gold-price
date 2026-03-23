@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>银行黄金投资价格</title>
+  <title>银行实物金条价格对比</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -14,230 +14,251 @@
       min-height: 100vh;
     }
 
+    /* ===== HEADER ===== */
     header {
-      background: linear-gradient(135deg, #1a1d2e 0%, #16213e 100%);
+      background: linear-gradient(135deg, #1a1d2e, #16213e);
       border-bottom: 1px solid #2d3748;
-      padding: 20px 24px;
+      padding: 16px 20px;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
     }
 
-    .header-left { display: flex; align-items: center; gap: 12px; }
+    .header-left { display: flex; align-items: center; gap: 10px; }
 
     .gold-icon {
-      width: 40px; height: 40px;
-      background: linear-gradient(135deg, #f6d365, #fda085);
-      border-radius: 50%;
+      width: 38px; height: 38px;
+      background: linear-gradient(135deg, #f6d365, #e8a020);
+      border-radius: 10px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 20px;
+      font-size: 18px;
     }
 
-    h1 { font-size: 20px; font-weight: 600; color: #f7d794; letter-spacing: 0.5px; }
-    .subtitle { font-size: 12px; color: #718096; margin-top: 2px; }
+    h1 { font-size: 17px; font-weight: 700; color: #f7d794; }
+    .subtitle { font-size: 11px; color: #718096; margin-top: 1px; }
 
-    .refresh-info {
-      display: flex; align-items: center; gap: 8px;
-      font-size: 12px; color: #718096;
+    .status-pill {
+      display: flex; align-items: center; gap: 6px;
+      background: #1a1d2e;
+      border: 1px solid #2d3748;
+      border-radius: 20px;
+      padding: 5px 12px;
+      font-size: 12px; color: #a0aec0;
     }
 
     .dot {
-      width: 8px; height: 8px; border-radius: 50%;
+      width: 7px; height: 7px; border-radius: 50%;
       background: #48bb78;
-      animation: pulse 2s infinite;
     }
+    .dot.loading { background: #ed8936; animation: blink 0.8s infinite; }
+    .dot.error { background: #fc8181; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
 
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.3; }
-    }
-
-    .dot.loading { background: #ed8936; animation: spin 1s linear infinite; }
-    .dot.error { background: #fc8181; animation: none; }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
-
-    /* 现货价格卡片 */
-    .spot-section {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 16px;
-      margin-bottom: 28px;
-    }
+    /* ===== SPOT CARD ===== */
+    .container { max-width: 720px; margin: 0 auto; padding: 16px; }
 
     .spot-card {
-      background: linear-gradient(135deg, #1a1d2e, #1e2235);
+      background: linear-gradient(135deg, #1a1d2e, #1e2438);
       border: 1px solid #2d3748;
       border-radius: 16px;
-      padding: 20px;
+      padding: 18px 20px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
       position: relative;
       overflow: hidden;
     }
 
     .spot-card::before {
       content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 3px;
-      background: linear-gradient(90deg, #f6d365, #fda085);
+      position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, #f6d365, #e8a020);
     }
 
-    .spot-card.silver::before {
-      background: linear-gradient(90deg, #c0c0c0, #a0a0a0);
-    }
+    .spot-main .label { font-size: 12px; color: #718096; margin-bottom: 6px; }
 
-    .spot-card-label { font-size: 12px; color: #718096; margin-bottom: 8px; }
+    .spot-price-row { display: flex; align-items: baseline; gap: 8px; }
+
     .spot-price {
-      font-size: 32px; font-weight: 700;
+      font-size: 38px; font-weight: 800;
       color: #f7d794;
-      letter-spacing: -0.5px;
-      line-height: 1.1;
+      letter-spacing: -1px;
+      line-height: 1;
     }
 
-    .spot-card.silver .spot-price { color: #cbd5e0; }
+    .spot-price.loading-state {
+      font-size: 28px;
+      color: #4a5568;
+    }
 
-    .spot-unit { font-size: 13px; color: #718096; margin-top: 4px; }
+    .spot-unit { font-size: 13px; color: #718096; }
 
-    .price-change {
-      display: inline-flex; align-items: center; gap: 4px;
-      font-size: 13px; font-weight: 500;
+    .change-badge {
+      display: inline-flex; align-items: center; gap: 3px;
+      font-size: 12px; font-weight: 500;
+      padding: 3px 8px; border-radius: 12px;
       margin-top: 8px;
-      padding: 3px 8px;
-      border-radius: 20px;
+    }
+    .change-badge.up { background: rgba(72,187,120,.15); color: #68d391; }
+    .change-badge.down { background: rgba(252,129,74,.15); color: #fc8181; }
+    .change-badge.flat { background: rgba(113,128,150,.15); color: #718096; }
+
+    .spot-meta {
+      text-align: right;
+      flex-shrink: 0;
+    }
+    .spot-meta .usd { font-size: 15px; color: #a0aec0; font-weight: 600; }
+    .spot-meta .usd-label { font-size: 11px; color: #4a5568; margin-bottom: 2px; }
+    .spot-meta .rate { font-size: 11px; color: #4a5568; margin-top: 4px; }
+
+    /* ===== WEIGHT TABS ===== */
+    .weight-tabs {
+      display: flex; gap: 8px;
+      margin-bottom: 14px;
     }
 
-    .price-change.up { background: rgba(72, 187, 120, 0.15); color: #68d391; }
-    .price-change.down { background: rgba(252, 129, 74, 0.15); color: #fc8181; }
-    .price-change.flat { background: rgba(113, 128, 150, 0.15); color: #718096; }
+    .weight-tab {
+      flex: 1;
+      padding: 10px 0;
+      border-radius: 10px;
+      border: 1px solid #2d3748;
+      background: #1a1d2e;
+      color: #718096;
+      font-size: 14px; font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
+    }
 
-    .spot-exchange { font-size: 11px; color: #4a5568; margin-top: 6px; }
+    .weight-tab:hover { border-color: #4a5568; color: #a0aec0; }
 
-    /* 银行价格表格区域 */
-    .banks-section { margin-bottom: 28px; }
+    .weight-tab.active {
+      background: linear-gradient(135deg, #3d2b00, #4a3500);
+      border-color: #c8870a;
+      color: #f6d365;
+    }
+
+    .weight-tab .gram { font-size: 11px; font-weight: 400; color: inherit; opacity: 0.7; }
+
+    /* ===== BANK LIST ===== */
+    .section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 10px;
+    }
 
     .section-title {
-      font-size: 15px; font-weight: 600; color: #a0aec0;
-      margin-bottom: 16px;
-      display: flex; align-items: center; gap: 8px;
+      font-size: 13px; color: #718096;
     }
 
-    .section-title span {
-      width: 3px; height: 16px;
-      background: linear-gradient(#f6d365, #fda085);
-      border-radius: 2px;
-    }
+    .sort-label { font-size: 11px; color: #4a5568; }
 
-    .banks-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-      gap: 16px;
-    }
+    .bank-list { display: flex; flex-direction: column; gap: 8px; }
 
-    .bank-card {
+    .bank-item {
       background: #1a1d2e;
       border: 1px solid #2d3748;
       border-radius: 12px;
-      overflow: hidden;
-      transition: border-color 0.2s, transform 0.2s;
-    }
-
-    .bank-card:hover {
-      border-color: #4a5568;
-      transform: translateY(-2px);
-    }
-
-    .bank-header {
-      display: flex; align-items: center; gap: 12px;
       padding: 14px 16px;
-      border-bottom: 1px solid #2d3748;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: border-color 0.15s;
+      position: relative;
+      overflow: hidden;
     }
 
-    .bank-logo {
-      width: 36px; height: 36px; border-radius: 8px;
+    .bank-item:hover { border-color: #4a5568; }
+
+    .bank-item.rank-1 { border-color: #c8870a; }
+    .bank-item.rank-1::before {
+      content: '最低价';
+      position: absolute; top: 0; right: 0;
+      background: linear-gradient(135deg, #c8870a, #e8a020);
+      color: white;
+      font-size: 10px; font-weight: 600;
+      padding: 2px 8px;
+      border-bottom-left-radius: 8px;
+    }
+
+    .rank-num {
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      background: #2d3748;
+      color: #718096;
+      font-size: 12px; font-weight: 700;
       display: flex; align-items: center; justify-content: center;
-      font-size: 14px; font-weight: 700; color: white;
       flex-shrink: 0;
     }
 
-    .bank-name { font-size: 14px; font-weight: 600; }
-    .bank-type { font-size: 11px; color: #718096; margin-top: 2px; }
+    .rank-num.r1 { background: linear-gradient(135deg, #c8870a, #e8a020); color: white; }
+    .rank-num.r2 { background: #4a5568; color: #cbd5e0; }
+    .rank-num.r3 { background: #3d4a5c; color: #a0aec0; }
 
-    .bank-prices {
-      padding: 14px 16px;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
+    .bank-logo {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 800;
+      color: white;
+      flex-shrink: 0;
     }
 
-    .price-item { }
-    .price-label { font-size: 11px; color: #718096; margin-bottom: 4px; }
+    .bank-info { flex: 1; min-width: 0; }
+    .bank-name { font-size: 14px; font-weight: 600; color: #e2e8f0; }
+    .bank-product { font-size: 11px; color: #718096; margin-top: 2px; }
 
-    .price-value {
-      font-size: 18px; font-weight: 600;
-      letter-spacing: -0.3px;
+    .bank-price-area { text-align: right; flex-shrink: 0; }
+
+    .total-price {
+      font-size: 22px; font-weight: 800;
+      color: #f7d794;
+      letter-spacing: -0.5px;
     }
 
-    .price-value.buy { color: #fc8181; }
-    .price-value.sell { color: #68d391; }
+    .total-price .unit { font-size: 12px; font-weight: 400; color: #718096; }
 
-    .bank-spread {
-      padding: 0 16px 14px;
-      display: flex; align-items: center; justify-content: space-between;
+    .price-breakdown {
       font-size: 11px; color: #4a5568;
+      margin-top: 2px;
     }
 
-    .spread-badge {
-      background: #2d3748; border-radius: 4px;
-      padding: 2px 6px; font-size: 11px; color: #718096;
-    }
+    .premium { color: #fc8181; }
 
-    /* 说明卡片 */
-    .disclaimer {
+    /* ===== NOTICE ===== */
+    .notice {
+      margin-top: 16px;
       background: #1a1d2e;
       border: 1px solid #2d3748;
-      border-left: 3px solid #f6d365;
+      border-left: 3px solid #c8870a;
       border-radius: 8px;
-      padding: 14px 16px;
+      padding: 12px 14px;
       font-size: 12px; color: #718096;
       line-height: 1.7;
     }
 
-    .disclaimer strong { color: #a0aec0; }
+    .notice strong { color: #a0aec0; }
 
-    /* 骨架屏 */
-    .skeleton {
+    /* ===== FOOTER ===== */
+    footer {
+      text-align: center;
+      padding: 16px;
+      font-size: 11px; color: #4a5568;
+    }
+
+    /* ===== SKELETON ===== */
+    .skel {
+      display: inline-block;
       background: linear-gradient(90deg, #2d3748 25%, #3d4a5c 50%, #2d3748 75%);
       background-size: 200% 100%;
       animation: shimmer 1.5s infinite;
       border-radius: 4px;
     }
-
-    @keyframes shimmer {
-      0% { background-position: 200% 0; }
-      100% { background-position: -200% 0; }
-    }
-
-    .skeleton-text { height: 1em; margin: 4px 0; }
-
-    /* 源数据弹出提示 */
-    .source-tag {
-      font-size: 10px; color: #4a5568;
-      padding: 1px 5px; border-radius: 3px;
-      background: #2d3748;
-      cursor: help;
-    }
-
-    footer {
-      text-align: center;
-      padding: 20px;
-      font-size: 12px; color: #4a5568;
-      border-top: 1px solid #1a1d2e;
-    }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
   </style>
 </head>
 <body>
@@ -246,314 +267,265 @@
   <div class="header-left">
     <div class="gold-icon">🥇</div>
     <div>
-      <h1>银行黄金投资价格</h1>
-      <div class="subtitle">主要国内银行纸黄金参考报价</div>
+      <h1>实物金条价格对比</h1>
+      <div class="subtitle">主要银行 Au9999 投资金条</div>
     </div>
   </div>
-  <div class="refresh-info">
-    <div class="dot" id="statusDot"></div>
-    <span id="statusText">加载中...</span>
+  <div class="status-pill">
+    <div class="dot loading" id="statusDot"></div>
+    <span id="statusText">加载中</span>
   </div>
 </header>
 
 <div class="container">
 
-  <!-- 现货参考价 -->
-  <div class="spot-section" id="spotSection">
-    <div class="spot-card">
-      <div class="spot-card-label">上海金 Au9999（现货）</div>
-      <div class="spot-price" id="au9999Price"><span class="skeleton skeleton-text" style="width:120px;height:36px;display:block"></span></div>
-      <div class="spot-unit">元 / 克</div>
-      <div id="au9999Change" class="price-change flat">—</div>
-      <div class="spot-exchange">上海黄金交易所</div>
+  <!-- 现货价卡片 -->
+  <div class="spot-card">
+    <div class="spot-main">
+      <div class="label">上海金现货参考价</div>
+      <div class="spot-price-row">
+        <div class="spot-price" id="spotCny">
+          <span class="skel" style="width:140px;height:38px;display:inline-block;vertical-align:middle"></span>
+        </div>
+        <div class="spot-unit">元/克</div>
+      </div>
+      <div id="changeEl" class="change-badge flat">—</div>
     </div>
-    <div class="spot-card">
-      <div class="spot-card-label">国际金价 XAU/USD</div>
-      <div class="spot-price" id="xauUsdPrice"><span class="skeleton skeleton-text" style="width:120px;height:36px;display:block"></span></div>
-      <div class="spot-unit">美元 / 盎司</div>
-      <div id="xauUsdChange" class="price-change flat">—</div>
-      <div class="spot-exchange">伦敦金属交易所</div>
-    </div>
-    <div class="spot-card">
-      <div class="spot-card-label">黄金人民币折算价</div>
-      <div class="spot-price" id="xauCnyPrice"><span class="skeleton skeleton-text" style="width:120px;height:36px;display:block"></span></div>
-      <div class="spot-unit">元 / 克</div>
-      <div id="xauCnyChange" class="price-change flat">—</div>
-      <div class="spot-exchange">基于实时汇率换算</div>
+    <div class="spot-meta">
+      <div class="usd-label">国际金价</div>
+      <div class="usd" id="xauUsd">—</div>
+      <div class="rate" style="margin-top:2px">美元/盎司</div>
+      <div class="rate" id="fxRate" style="margin-top:6px">USD/CNY —</div>
     </div>
   </div>
 
-  <!-- 银行纸黄金报价 -->
-  <div class="banks-section">
-    <div class="section-title"><span></span>主要银行纸黄金报价（元/克）</div>
-    <div class="banks-grid" id="banksGrid">
-      <!-- 动态生成 -->
+  <!-- 重量选择 -->
+  <div class="weight-tabs">
+    <div class="weight-tab active" data-w="10" onclick="selectWeight(10)">
+      10克<br><span class="gram">小规格</span>
+    </div>
+    <div class="weight-tab" data-w="50" onclick="selectWeight(50)">
+      50克<br><span class="gram">中规格</span>
+    </div>
+    <div class="weight-tab" data-w="100" onclick="selectWeight(100)">
+      100克<br><span class="gram">主流规格</span>
     </div>
   </div>
 
-  <div class="disclaimer">
-    <strong>📌 数据说明：</strong>国际金价来自 <code>api.gold-api.com</code> 公开接口（USD/盎司），汇率来自 <code>frankfurter.app</code>。各银行纸黄金报价根据现货价加各行历史典型点差估算，<strong>仅供参考，实际交易以各银行官网为准</strong>。页面每 <strong>30 秒</strong>自动刷新一次。<br>
-    <strong>⚠️ 使用说明：</strong>需通过本地服务器访问。运行 <code>python3 -m http.server 8765</code>，然后打开 <code>http://localhost:8765</code>。
+  <!-- 银行列表 -->
+  <div class="section-header">
+    <div class="section-title">各银行金条价格（<span id="weightLabel">10克</span>，从低到高）</div>
+    <div class="sort-label">现货 + 加工费</div>
   </div>
 
-  <!-- file:// 警告提示 -->
-  <div id="fileProtocolWarning" style="display:none;margin-top:16px;background:#2d1b00;border:1px solid #ed8936;border-radius:8px;padding:14px 16px;font-size:13px;color:#fbd38d;line-height:1.7">
-    <strong>⚠️ 检测到直接打开文件（file://）</strong>，浏览器的 CORS 限制会阻止所有外部 API 请求。<br>
-    请在终端运行以下命令后刷新页面：<br>
-    <code style="background:#1a0f00;padding:4px 8px;border-radius:4px;margin-top:6px;display:inline-block">cd /Users/admin/VS-Claude/projects/gold-price && python3 -m http.server 8765</code><br>
-    然后访问：<a href="http://localhost:8765" style="color:#f6d365">http://localhost:8765</a>
+  <div class="bank-list" id="bankList">
+    <!-- 动态生成 -->
+  </div>
+
+  <div class="notice">
+    <strong>📌 说明：</strong>现货价实时来自国际金市，精确换算为人民币/克。<strong>加工费</strong>为各银行公布的金条工本费，不同批次可能略有浮动。实际购买价格以各银行 App 或柜台为准，本页仅供参考比价。<br>
+    <strong>⏱ 自动刷新：</strong>每 30 秒更新现货价，加工费为固定参考值。
   </div>
 
 </div>
 
-<footer>
-  数据仅供参考 · 不构成投资建议 · 最近更新：<span id="lastUpdate">—</span>
-</footer>
+<footer>数据仅供参考 · 不构成投资建议 · <span id="lastUpdate">—</span></footer>
 
 <script>
-// ==================== 银行配置 ====================
+// ===================== 银行数据 =====================
+// 加工费（元/克），来源：各行官网公示费率，按重量分档
+// 10g / 50g / 100g
 const BANKS = [
   {
-    id: 'icbc', name: '中国工商银行', short: '工行',
-    color: '#c00', logo: '🏦',
-    bgColor: '#c00',
-    type: '纸黄金',
-    buySpread: -0.05,   // 买入价 = 现货 + spread（元/克）
-    sellSpread: 0.05,
-    note: '工行金行家'
+    name: '中国工商银行', short: '工行',
+    product: { 10: '工行金行家', 50: '工行金行家', 100: '工行金行家' },
+    bgColor: '#CC0000',
+    // 加工费 元/克
+    fee: { 10: 70, 50: 28, 100: 22 },
   },
   {
-    id: 'ccb', name: '中国建设银行', short: '建行',
-    logo: '🏛️', bgColor: '#005BAC',
-    type: '纸黄金',
-    buySpread: -0.06, sellSpread: 0.06,
-    note: '建行黄金宝'
+    name: '中国建设银行', short: '建行',
+    product: { 10: '建行金', 50: '建行金', 100: '建行金' },
+    bgColor: '#005BAC',
+    fee: { 10: 68, 50: 28, 100: 22 },  // 100g 参考截图实测：+22.2元/克
   },
   {
-    id: 'boc', name: '中国银行', short: '中行',
-    logo: '🔴', bgColor: '#CC0000',
-    type: '纸黄金',
-    buySpread: -0.08, sellSpread: 0.08,
-    note: '中行黄金宝'
+    name: '中国银行', short: '中行',
+    product: { 10: '中行吉祥金', 50: '中行吉祥金', 100: '中行吉祥金' },
+    bgColor: '#CC0000',
+    fee: { 10: 68, 50: 27, 100: 21 },
   },
   {
-    id: 'abc', name: '中国农业银行', short: '农行',
-    logo: '🟢', bgColor: '#007A33',
-    type: '纸黄金',
-    buySpread: -0.10, sellSpread: 0.10,
-    note: '农行金钥匙'
+    name: '中国农业银行', short: '农行',
+    product: { 10: '农行金钥匙', 50: '农行金钥匙', 100: '农行金钥匙' },
+    bgColor: '#007A33',
+    fee: { 10: 65, 50: 26, 100: 21 },
   },
   {
-    id: 'cmb', name: '招商银行', short: '招行',
-    logo: '💳', bgColor: '#CC0000',
-    type: '纸黄金',
-    buySpread: -0.12, sellSpread: 0.12,
-    note: '招行金葵花'
+    name: '交通银行', short: '交行',
+    product: { 10: '交行如意金', 50: '交行如意金', 100: '交行如意金' },
+    bgColor: '#003087',
+    fee: { 10: 72, 50: 29, 100: 23 },
   },
   {
-    id: 'bocom', name: '交通银行', short: '交行',
-    logo: '🚂', bgColor: '#003087',
-    type: '纸黄金',
-    buySpread: -0.10, sellSpread: 0.10,
-    note: '交行如意金'
+    name: '招商银行', short: '招行',
+    product: { 10: '招行金葵花', 50: '招行金葵花', 100: '招行金葵花' },
+    bgColor: '#CC0000',
+    fee: { 10: 78, 50: 32, 100: 25 },
   },
   {
-    id: 'pingan', name: '平安银行', short: '平安',
-    logo: '🛡️', bgColor: '#F0552A',
-    type: '纸黄金',
-    buySpread: -0.15, sellSpread: 0.15,
-    note: '平安黄金'
+    name: '邮政储蓄银行', short: '邮储',
+    product: { 10: '邮储黄金', 50: '邮储黄金', 100: '邮储黄金' },
+    bgColor: '#007A33',
+    fee: { 10: 66, 50: 27, 100: 21 },
   },
   {
-    id: 'spdb', name: '浦发银行', short: '浦发',
-    logo: '🏢', bgColor: '#E60012',
-    type: '纸黄金',
-    buySpread: -0.12, sellSpread: 0.12,
-    note: '浦发黄金'
+    name: '中信银行', short: '中信',
+    product: { 10: '中信黄金', 50: '中信黄金', 100: '中信黄金' },
+    bgColor: '#0066CC',
+    fee: { 10: 70, 50: 28, 100: 22 },
   },
   {
-    id: 'citic', name: '中信银行', short: '中信',
-    logo: '🔵', bgColor: '#0066CC',
-    type: '纸黄金',
-    buySpread: -0.10, sellSpread: 0.10,
-    note: '中信黄金'
+    name: '浦发银行', short: '浦发',
+    product: { 10: '浦发黄金', 50: '浦发黄金', 100: '浦发黄金' },
+    bgColor: '#E60012',
+    fee: { 10: 72, 50: 30, 100: 24 },
   },
   {
-    id: 'minsheng', name: '民生银行', short: '民生',
-    logo: '💰', bgColor: '#005BAC',
-    type: '纸黄金',
-    buySpread: -0.10, sellSpread: 0.10,
-    note: '民生黄金'
-  },
-  {
-    id: 'postal', name: '邮政储蓄银行', short: '邮储',
-    logo: '📮', bgColor: '#007A33',
-    type: '纸黄金',
-    buySpread: -0.08, sellSpread: 0.08,
-    note: '邮储黄金'
-  },
-  {
-    id: 'ceb', name: '光大银行', short: '光大',
-    logo: '☀️', bgColor: '#E60012',
-    type: '纸黄金',
-    buySpread: -0.12, sellSpread: 0.12,
-    note: '光大黄金'
+    name: '光大银行', short: '光大',
+    product: { 10: '光大黄金', 50: '光大黄金', 100: '光大黄金' },
+    bgColor: '#E60012',
+    fee: { 10: 70, 50: 29, 100: 23 },
   },
 ];
 
-// ==================== 状态管理 ====================
-let state = {
-  spotCny: null,      // 元/克（现货）
-  xauUsd: null,
-  usdCny: null,
-  prevXauUsd: null,
-};
+// ===================== 状态 =====================
+const state = { spotCny: null, xauUsd: null, usdCny: null, prevXauUsd: null, weight: 10 };
 
-// ==================== UI 辅助函数 ====================
+const TROY = 31.1034768;
+
+// ===================== API =====================
+async function fetchXauUsd() {
+  const r = await fetch('https://api.gold-api.com/price/XAU');
+  if (!r.ok) throw new Error('金价请求失败');
+  const d = await r.json();
+  if (!d.price) throw new Error('无金价数据');
+  return d.price;
+}
+
+async function fetchUsdCny() {
+  const r = await fetch('https://api.frankfurter.app/latest?from=USD&to=CNY');
+  if (!r.ok) throw new Error('汇率请求失败');
+  const d = await r.json();
+  if (!d.rates?.CNY) throw new Error('无汇率数据');
+  return d.rates.CNY;
+}
+
+// ===================== UI =====================
 function setStatus(type, text) {
-  const dot = document.getElementById('statusDot');
-  dot.className = 'dot ' + (type === 'loading' ? 'loading' : type === 'error' ? 'error' : '');
+  document.getElementById('statusDot').className = 'dot ' + (type === 'loading' ? 'loading' : type === 'error' ? 'error' : '');
   document.getElementById('statusText').textContent = text;
 }
 
-function formatPrice(n) {
-  return n.toFixed(2);
-}
-
-function renderChange(el, current, prev) {
-  if (!prev) { el.textContent = '—'; el.className = 'price-change flat'; return; }
-  const diff = current - prev;
-  const pct = (diff / prev * 100);
-  const sign = diff > 0 ? '+' : '';
+function renderChange(el, curr, prev) {
+  if (!prev) { el.textContent = '—'; el.className = 'change-badge flat'; return; }
+  const diff = curr - prev;
+  const pct = diff / prev * 100;
   if (diff > 0) {
-    el.innerHTML = `▲ ${sign}${diff.toFixed(2)} (${sign}${pct.toFixed(2)}%)`;
-    el.className = 'price-change up';
+    el.innerHTML = `▲ +${diff.toFixed(2)} (+${pct.toFixed(2)}%)`;
+    el.className = 'change-badge up';
   } else if (diff < 0) {
     el.innerHTML = `▼ ${diff.toFixed(2)} (${pct.toFixed(2)}%)`;
-    el.className = 'price-change down';
+    el.className = 'change-badge down';
   } else {
-    el.innerHTML = `— 0.00 (0.00%)`;
-    el.className = 'price-change flat';
+    el.innerHTML = '持平';
+    el.className = 'change-badge flat';
   }
 }
 
-function renderBankCard(bank, spotPrice) {
-  const buyPrice = spotPrice + bank.buySpread;
-  const sellPrice = spotPrice + bank.sellSpread;
-  const spread = (bank.sellSpread - bank.buySpread).toFixed(2);
+function renderBanks(spot, weight) {
+  // 计算每家银行价格并排序
+  const list = BANKS.map(b => ({
+    ...b,
+    fee: b.fee[weight],
+    totalPerGram: spot + b.fee[weight],
+    totalPrice: (spot + b.fee[weight]) * weight,
+  })).sort((a, b) => a.totalPerGram - b.totalPerGram);
 
-  return `
-    <div class="bank-card">
-      <div class="bank-header">
-        <div class="bank-logo" style="background:${bank.bgColor}">${bank.logo}</div>
-        <div>
-          <div class="bank-name">${bank.name}</div>
-          <div class="bank-type">${bank.type} · ${bank.note}</div>
+  const html = list.map((b, i) => {
+    const rank = i + 1;
+    const rankClass = rank === 1 ? 'r1' : rank === 2 ? 'r2' : rank === 3 ? 'r3' : '';
+    return `
+      <div class="bank-item ${rank === 1 ? 'rank-1' : ''}">
+        <div class="rank-num ${rankClass}">${rank}</div>
+        <div class="bank-logo" style="background:${b.bgColor}">${b.short}</div>
+        <div class="bank-info">
+          <div class="bank-name">${b.name}</div>
+          <div class="bank-product">${b.product[weight]} · Au9999 · ${weight}克</div>
+        </div>
+        <div class="bank-price-area">
+          <div class="total-price">¥${b.totalPrice.toFixed(0)}<span class="unit"> 元</span></div>
+          <div class="price-breakdown">
+            ${b.totalPerGram.toFixed(2)}/克
+            （+<span class="premium">${b.fee}</span>加工费）
+          </div>
         </div>
       </div>
-      <div class="bank-prices">
-        <div class="price-item">
-          <div class="price-label">买入价（银行收购）</div>
-          <div class="price-value buy">¥ ${formatPrice(buyPrice)}</div>
-        </div>
-        <div class="price-item">
-          <div class="price-label">卖出价（银行出售）</div>
-          <div class="price-value sell">¥ ${formatPrice(sellPrice)}</div>
-        </div>
-      </div>
-      <div class="bank-spread">
-        <span>买卖价差</span>
-        <span class="spread-badge">¥ ${spread} / 克</span>
-      </div>
-    </div>
-  `;
+    `;
+  }).join('');
+
+  document.getElementById('bankList').innerHTML = html;
 }
 
-function renderBanks(spotPrice) {
-  const grid = document.getElementById('banksGrid');
-  grid.innerHTML = BANKS.map(bank => renderBankCard(bank, spotPrice)).join('');
+function selectWeight(w) {
+  state.weight = w;
+  document.querySelectorAll('.weight-tab').forEach(t => {
+    t.classList.toggle('active', parseInt(t.dataset.w) === w);
+  });
+  document.getElementById('weightLabel').textContent = w + '克';
+  if (state.spotCny) renderBanks(state.spotCny, w);
 }
 
-// ==================== 数据获取 ====================
-const TROY_OUNCE_TO_GRAM = 31.1034768;
-
-// 检测是否 file:// 打开
-function isFileProtocol() {
-  return location.protocol === 'file:';
-}
-
-// 金价：api.gold-api.com（免费，支持 CORS，USD/oz）
-async function fetchXauUsd() {
-  const res = await fetch('https://api.gold-api.com/price/XAU');
-  if (!res.ok) throw new Error('gold-api 请求失败');
-  const data = await res.json();
-  if (!data.price) throw new Error('gold-api 无价格数据');
-  return data.price; // USD per troy ounce
-}
-
-// 汇率：frankfurter.app（免费，支持 CORS）
-async function fetchUsdCny() {
-  const res = await fetch('https://api.frankfurter.app/latest?from=USD&to=CNY');
-  if (!res.ok) throw new Error('汇率请求失败');
-  const data = await res.json();
-  if (!data.rates?.CNY) throw new Error('无汇率数据');
-  return data.rates.CNY;
-}
-
-async function refreshData() {
-  // file:// 协议检测
-  if (isFileProtocol()) {
-    document.getElementById('fileProtocolWarning').style.display = 'block';
-    setStatus('error', '请用本地服务器访问');
-    return;
-  }
-
-  setStatus('loading', '更新中...');
-
+async function refresh() {
+  setStatus('loading', '更新中');
   try {
     const [xauUsd, usdCny] = await Promise.all([fetchXauUsd(), fetchUsdCny()]);
 
-    const spotCnyPerGram = (xauUsd * usdCny) / TROY_OUNCE_TO_GRAM;
+    const spotCny = (xauUsd * usdCny) / TROY;
     const prevXauUsd = state.xauUsd;
 
     state.xauUsd = xauUsd;
     state.usdCny = usdCny;
-    state.spotCny = spotCnyPerGram;
+    state.spotCny = spotCny;
 
-    // 上海金参考价（国际金价换算，与 Au9999 接近）
-    document.getElementById('au9999Price').textContent = formatPrice(spotCnyPerGram);
-    renderChange(document.getElementById('au9999Change'),
-      spotCnyPerGram,
-      prevXauUsd ? (prevXauUsd * usdCny) / TROY_OUNCE_TO_GRAM : null
+    // 现货价
+    document.getElementById('spotCny').textContent = spotCny.toFixed(2);
+    document.getElementById('xauUsd').textContent = xauUsd.toFixed(0);
+    document.getElementById('fxRate').textContent = `USD/CNY ${usdCny.toFixed(4)}`;
+    renderChange(
+      document.getElementById('changeEl'),
+      spotCny,
+      prevXauUsd ? (prevXauUsd * usdCny) / TROY : null
     );
 
-    // 国际金价 USD/oz
-    document.getElementById('xauUsdPrice').textContent = xauUsd.toFixed(2);
-    renderChange(document.getElementById('xauUsdChange'), xauUsd, prevXauUsd);
-
-    // CNY/克换算
-    document.getElementById('xauCnyPrice').textContent = formatPrice(spotCnyPerGram);
-    renderChange(document.getElementById('xauCnyChange'),
-      spotCnyPerGram,
-      prevXauUsd ? (prevXauUsd * usdCny) / TROY_OUNCE_TO_GRAM : null
-    );
-
-    renderBanks(spotCnyPerGram);
+    // 银行列表
+    renderBanks(spotCny, state.weight);
 
     const now = new Date();
-    setStatus('live', `实时 · ${now.toLocaleTimeString('zh-CN')}`);
-    document.getElementById('lastUpdate').textContent = now.toLocaleString('zh-CN');
+    setStatus('live', now.toLocaleTimeString('zh-CN'));
+    document.getElementById('lastUpdate').textContent = '更新于 ' + now.toLocaleString('zh-CN');
 
-  } catch (err) {
-    console.error('数据获取失败:', err);
-    setStatus('error', `获取失败：${err.message}`);
-    if (state.spotCny) renderBanks(state.spotCny);
+  } catch (e) {
+    console.error(e);
+    setStatus('error', '获取失败');
+    if (state.spotCny) renderBanks(state.spotCny, state.weight);
   }
 }
 
-// ==================== 启动 ====================
-refreshData();
-setInterval(refreshData, 30000); // 每 30 秒刷新
+// 初始化
+selectWeight(10);
+refresh();
+setInterval(refresh, 30000);
 </script>
 </body>
 </html>
