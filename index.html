@@ -150,9 +150,23 @@
     .cres{font-size:10px;min-width:60px;text-align:right}
     .cres.ok{color:#68d391}
     .cres.na{color:#4a5568}
-    .mfooter{padding:10px 16px;border-top:1px solid #2d3748;display:flex;gap:7px;flex-shrink:0}
+    .mfooter{padding:10px 16px;border-top:1px solid #2d3748;display:flex;flex-direction:column;gap:8px;flex-shrink:0}
+    .mfooter-row{display:flex;gap:7px}
     .bsave{flex:1;background:linear-gradient(135deg,#c8870a,#e8a020);color:white;border:none;border-radius:9px;padding:11px;font-size:13px;font-weight:700;cursor:pointer}
     .breset{background:#2d3748;color:#718096;border:none;border-radius:9px;padding:11px 13px;font-size:12px;cursor:pointer}
+    .sync-box{background:#0f1117;border:1px solid #2d3748;border-radius:10px;padding:11px 12px}
+    .sync-title{font-size:11px;font-weight:600;color:#a0aec0;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
+    .sync-status{font-size:10px;padding:2px 7px;border-radius:10px}
+    .sync-status.on{background:rgba(72,187,120,.15);color:#68d391}
+    .sync-status.off{background:rgba(113,128,150,.12);color:#718096}
+    .sync-status.syncing{background:rgba(237,137,54,.15);color:#ed8936}
+    .sync-input-row{display:flex;gap:6px;align-items:center}
+    .sync-token-input{flex:1;background:#1a1d2e;border:1px solid #2d3748;border-radius:7px;padding:7px 10px;font-size:12px;color:#e2e8f0;outline:none;font-family:monospace}
+    .sync-token-input:focus{border-color:#c8870a}
+    .sync-token-input::placeholder{color:#4a5568;font-size:11px}
+    .bsync{background:#2d3748;color:#a0aec0;border:none;border-radius:7px;padding:7px 11px;font-size:12px;cursor:pointer;white-space:nowrap}
+    .bsync:hover{background:#3d4a5c}
+    .sync-help{font-size:10px;color:#4a5568;line-height:1.6;margin-top:6px}
   </style>
 </head>
 <body>
@@ -300,8 +314,24 @@
     <div class="mspot">当前现货：<b id="mSpot">—</b> 元/克</div>
     <div class="mbody" id="calBody"></div>
     <div class="mfooter">
-      <button class="breset" onclick="resetCal()">清除校准</button>
-      <button class="bsave" onclick="saveCal()">💾 保存校准数据</button>
+      <!-- 同步设置 -->
+      <div class="sync-box">
+        <div class="sync-title">
+          ☁️ 多设备同步（GitHub Gist）
+          <span class="sync-status off" id="syncStatus">未配置</span>
+        </div>
+        <div class="sync-input-row">
+          <input class="sync-token-input" id="syncToken" type="password" placeholder="粘贴 GitHub Token（gist 权限）">
+          <button class="bsync" onclick="connectSync()">连接</button>
+        </div>
+        <div class="sync-help">
+          首次使用：<a href="https://github.com/settings/tokens/new?scopes=gist&description=GoldPriceSync" target="_blank" style="color:#c8870a">点此生成 Token</a>（只需勾选 gist 权限）→ 复制粘贴到上方 → 点连接。所有设备输入同一个 Token 即可自动同步。
+        </div>
+      </div>
+      <div class="mfooter-row">
+        <button class="breset" onclick="resetCal()">清除</button>
+        <button class="bsave" onclick="saveCal()">💾 保存并同步</button>
+      </div>
     </div>
   </div>
 </div>
@@ -756,6 +786,11 @@ function saveCal() {
   setCal(cal);
   closeModal('calOverlay');
   if (state.spot) renderBanks(state.spot);
+  // 推送到 Gist
+  if (getSyncToken()) {
+    setSyncUI('syncing', '同步中...');
+    syncPush().then(() => setSyncUI('on', '已同步')).catch(() => setSyncUI('off', '同步失败'));
+  }
   if (n>0) alert(`✅ 已保存 ${n} 家银行校准数据`);
 }
 
@@ -795,10 +830,135 @@ function restoreAlertState() {
 }
 
 // ============================================================
+// GitHub Gist 同步
+// ============================================================
+const GIST_FILENAME = 'gold-price-calibration.json';
+
+function getSyncToken() { return localStorage.getItem('syncToken') || ''; }
+function getSyncGistId() { return localStorage.getItem('syncGistId') || ''; }
+
+function setSyncUI(status, text) {
+  const el = document.getElementById('syncStatus');
+  if (!el) return;
+  el.className = 'sync-status ' + status;
+  el.textContent = text;
+}
+
+async function connectSync() {
+  const token = document.getElementById('syncToken').value.trim();
+  if (!token) { alert('请输入 GitHub Token'); return; }
+  setSyncUI('syncing', '连接中...');
+  try {
+    // 验证 token
+    const r = await fetch('https://api.github.com/user', {
+      headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }
+    });
+    if (!r.ok) throw new Error('Token 无效');
+    const user = await r.json();
+    localStorage.setItem('syncToken', token);
+
+    // 查找已有 Gist
+    const gistId = await findOrCreateGist(token);
+    localStorage.setItem('syncGistId', gistId);
+
+    // 拉取数据
+    await syncPull(token, gistId);
+    setSyncUI('on', `已同步 · ${user.login}`);
+    renderCalBody(); // 刷新校准面板
+    if (state.spot) renderBanks(state.spot);
+  } catch(e) {
+    setSyncUI('off', '连接失败');
+    alert('连接失败：' + e.message);
+  }
+}
+
+async function findOrCreateGist(token) {
+  // 查找已有的同步 Gist
+  const r = await fetch('https://api.github.com/gists?per_page=30', {
+    headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }
+  });
+  const gists = await r.json();
+  const existing = gists.find(g => g.files?.[GIST_FILENAME]);
+  if (existing) return existing.id;
+
+  // 创建新 Gist
+  const r2 = await fetch('https://api.github.com/gists', {
+    method: 'POST',
+    headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      description: 'Gold Price Calibration Sync',
+      public: false,
+      files: { [GIST_FILENAME]: { content: JSON.stringify({}) } }
+    })
+  });
+  const gist = await r2.json();
+  return gist.id;
+}
+
+async function syncPull(token, gistId) {
+  token  = token  || getSyncToken();
+  gistId = gistId || getSyncGistId();
+  if (!token || !gistId) return;
+  const r = await fetch(`https://api.github.com/gists/${gistId}`, {
+    headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }
+  });
+  if (!r.ok) return;
+  const gist = await r.json();
+  const content = gist.files?.[GIST_FILENAME]?.content;
+  if (!content) return;
+  const remote = JSON.parse(content);
+  // 合并：以时间戳较新的为准
+  const local = getCal();
+  const localTs = parseInt(localStorage.getItem('calTs') || '0');
+  const remoteTs = remote._ts || 0;
+  if (remoteTs > localTs) {
+    delete remote._ts;
+    setCal(remote);
+    localStorage.setItem('calTs', remoteTs);
+  }
+}
+
+async function syncPush() {
+  const token  = getSyncToken();
+  const gistId = getSyncGistId();
+  if (!token || !gistId) return;
+  const cal = getCal();
+  const ts = Date.now();
+  cal._ts = ts;
+  localStorage.setItem('calTs', ts);
+  await fetch(`https://api.github.com/gists/${gistId}`, {
+    method: 'PATCH',
+    headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ files: { [GIST_FILENAME]: { content: JSON.stringify(cal) } } })
+  });
+  delete cal._ts;
+}
+
+async function restoreSyncState() {
+  const token  = getSyncToken();
+  const gistId = getSyncGistId();
+  const input = document.getElementById('syncToken');
+  if (input && token) input.value = token;
+  if (token && gistId) {
+    setSyncUI('syncing', '同步中...');
+    try {
+      await syncPull(token, gistId);
+      const r = await fetch('https://api.github.com/user', {
+        headers: { Authorization: `token ${token}` }
+      });
+      const user = await r.json();
+      setSyncUI('on', `已同步 · ${user.login}`);
+      if (state.spot) renderBanks(state.spot);
+    } catch { setSyncUI('off', '同步失败'); }
+  }
+}
+
+// ============================================================
 // 启动
 // ============================================================
 restoreAlertState();
 refresh();
+restoreSyncState();
 setInterval(refresh, 30000);
 </script>
 </body>
