@@ -167,6 +167,13 @@
     .bsync{background:#2d3748;color:#a0aec0;border:none;border-radius:7px;padding:7px 11px;font-size:12px;cursor:pointer;white-space:nowrap}
     .bsync:hover{background:#3d4a5c}
     .sync-help{font-size:10px;color:#4a5568;line-height:1.6;margin-top:6px}
+    /* 银行勾选 */
+    .bank-pick-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #1e2235;cursor:pointer}
+    .bank-pick-item:last-child{border-bottom:none}
+    .toggle{width:40px;height:22px;border-radius:11px;background:#2d3748;position:relative;flex-shrink:0;transition:background .2s;margin-left:auto}
+    .toggle.on{background:#c8870a}
+    .toggle::after{content:'';position:absolute;width:18px;height:18px;background:white;border-radius:50%;top:2px;left:2px;transition:left .2s}
+    .toggle.on::after{left:20px}
   </style>
 </head>
 <body>
@@ -264,7 +271,10 @@
 
   <!-- 银行价格 -->
   <div class="card" style="padding:12px 14px">
-    <div class="sec-title" style="margin-bottom:10px">🏦 各银行100克金条报价（从低到高）</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div class="sec-title" style="margin-bottom:0">🏦 各银行100克金条报价（从低到高）</div>
+      <div class="pill" style="font-size:11px" onclick="openModal('bankPickOverlay')">⚙️ 管理</div>
+    </div>
     <div class="bank-list" id="bankList"></div>
   </div>
 
@@ -332,6 +342,21 @@
         <button class="breset" onclick="resetCal()">清除</button>
         <button class="bsave" onclick="saveCal()">💾 保存并同步</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- 银行选择 Modal -->
+<div class="overlay" id="bankPickOverlay" onclick="onOvClick(event,'bankPickOverlay')">
+  <div class="modal" style="max-height:70vh">
+    <div class="mh">
+      <div><div class="mt">⚙️ 管理显示银行</div><div class="ms">勾选要在列表中显示的银行</div></div>
+      <button class="xbtn" onclick="closeModal('bankPickOverlay')">×</button>
+    </div>
+    <div class="mbody" id="bankPickBody" style="padding:8px 16px 4px"></div>
+    <div class="mfooter" style="flex-direction:row">
+      <button class="breset" onclick="selectAllBanks()">全选</button>
+      <button class="bsave" onclick="closeModal('bankPickOverlay')">完成</button>
     </div>
   </div>
 </div>
@@ -626,7 +651,8 @@ function bankLogoHtml(b, size=36) {
 // ============================================================
 function renderBanks(spot) {
   const cal = getCal();
-  const list = BANKS.map(b=>{
+  const visible = getVisibleBanks();
+  const list = BANKS.filter(b => visible.includes(b.id)).map(b=>{
     const key = `${b.id}_100`;
     const prem = cal[key] ?? b.def;
     const isReal = key in cal;
@@ -825,7 +851,10 @@ function openNotifModal() { openModal('notifOverlay'); }
 // ============================================================
 // Modal 通用
 // ============================================================
-function openModal(id) { document.getElementById(id).classList.add('open'); }
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  if (id === 'bankPickOverlay') openBankPicker();
+}
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 function onOvClick(e,id) { if(e.target===document.getElementById(id)) closeModal(id); }
 
@@ -843,6 +872,47 @@ function restoreAlertState() {
     document.getElementById('alertStatus').textContent = `✅ 提醒已开启：金价 ≤ ¥${saved} 元/克时通知你`;
     document.getElementById('alertStatus').className = 'alert-status active';
   }
+}
+
+// ============================================================
+// 银行显示管理
+// ============================================================
+function getVisibleBanks() {
+  const saved = LS.get('visibleBanks');
+  if (!saved) return BANKS.map(b => b.id); // 默认全显示
+  return saved;
+}
+function setVisibleBanks(ids) { LS.set('visibleBanks', ids); }
+
+function openBankPicker() {
+  const visible = getVisibleBanks();
+  document.getElementById('bankPickBody').innerHTML = BANKS.map(b => `
+    <div class="bank-pick-item" onclick="toggleBankPick('${b.id}')">
+      ${bankLogoHtml(b, 36)}
+      <span style="font-size:14px;font-weight:600">${b.name}</span>
+      <div class="toggle ${visible.includes(b.id)?'on':''}" id="toggle_${b.id}"></div>
+    </div>
+  `).join('');
+}
+
+function toggleBankPick(id) {
+  const visible = getVisibleBanks();
+  const idx = visible.indexOf(id);
+  if (idx >= 0) {
+    if (visible.length <= 1) return; // 至少保留一家
+    visible.splice(idx, 1);
+  } else {
+    visible.push(id);
+  }
+  setVisibleBanks(visible);
+  document.getElementById(`toggle_${id}`).className = 'toggle ' + (visible.includes(id) ? 'on' : '');
+  if (state.spot) renderBanks(state.spot);
+}
+
+function selectAllBanks() {
+  setVisibleBanks(BANKS.map(b => b.id));
+  openBankPicker(); // 刷新面板
+  if (state.spot) renderBanks(state.spot);
 }
 
 // ============================================================
