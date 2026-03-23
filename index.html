@@ -167,16 +167,9 @@
     </div>
   </div>
 
-  <!-- 重量选择 -->
-  <div class="weight-tabs">
-    <div class="weight-tab active" data-w="10" onclick="selectWeight(10)">10克<small>小规格</small></div>
-    <div class="weight-tab" data-w="50" onclick="selectWeight(50)">50克<small>中规格</small></div>
-    <div class="weight-tab" data-w="100" onclick="selectWeight(100)">100克<small>主流</small></div>
-  </div>
-
   <!-- 银行列表 -->
   <div class="section-header">
-    <div class="section-title">各银行金条价格（<span id="weightLabel">10克</span>，从低到高）</div>
+    <div class="section-title">各银行金条价格（100克，从低到高）</div>
     <div class="calibrated-count" id="calCount"></div>
   </div>
   <div class="bank-list" id="bankList"></div>
@@ -205,12 +198,6 @@
 
     <div class="modal-spot" id="modalSpotInfo">当前现货：<b id="modalSpot">—</b> 元/克</div>
 
-    <div class="modal-weights">
-      <div class="modal-w-tab active" data-w="10" onclick="selectModalWeight(10)">10克</div>
-      <div class="modal-w-tab" data-w="50" onclick="selectModalWeight(50)">50克</div>
-      <div class="modal-w-tab" data-w="100" onclick="selectModalWeight(100)">100克</div>
-    </div>
-
     <div class="modal-body" id="modalBody"></div>
 
     <div class="modal-footer">
@@ -238,7 +225,7 @@ const BANKS = [
 const TROY = 31.1034768;
 
 // ===== 状态 =====
-let state = { spotCny: null, xauUsd: null, usdCny: null, prevXauUsd: null, weight: 10, modalWeight: 10 };
+let state = { spotCny: null, xauUsd: null, usdCny: null, prevXauUsd: null, weight: 100, modalWeight: 100 };
 
 // 校准数据存 localStorage: { bankId_weight: premium }
 function loadCal() {
@@ -317,12 +304,6 @@ function renderBanks(spot, weight) {
   }).join('');
 }
 
-function selectWeight(w) {
-  state.weight = w;
-  document.querySelectorAll('.weight-tab').forEach(t => t.classList.toggle('active', +t.dataset.w === w));
-  document.getElementById('weightLabel').textContent = w + '克';
-  if (state.spotCny) renderBanks(state.spotCny, w);
-}
 
 // ===== 刷新数据 =====
 async function refresh() {
@@ -357,11 +338,6 @@ function openModal() {
 function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
 function onOverlayClick(e) { if (e.target === document.getElementById('modalOverlay')) closeModal(); }
 
-function selectModalWeight(w) {
-  state.modalWeight = w;
-  document.querySelectorAll('.modal-w-tab').forEach(t => t.classList.toggle('active', +t.dataset.w === w));
-  renderModalBanks(w);
-}
 
 function renderModalBanks(weight) {
   const cal = loadCal();
@@ -436,7 +412,6 @@ function resetCalibration() {
 }
 
 // ===== 启动 =====
-selectWeight(10);
 refresh();
 setInterval(refresh, 30000);
 </script>
